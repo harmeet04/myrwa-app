@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-visual">
+  <meta name="description" content="A new Flutter project.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="neighborhood_app">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>neighborhood_app</title>
+  <link rel="manifest" href="manifest.json">
+</head>
+<style>
+  html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
+  /* Target all Flutter host elements across versions */
+  flt-glass-pane, flutter-view, flutter-view[flt-embedding] {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+</style>
+<body>
+  <script>
+    // iOS Safari keyboard dismiss fix — targets Flutter 3.41+ elements
+    (function() {
+      var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+      if (!isIOS) return;
+
+      function getFlutterHost() {
+        return document.querySelector('flutter-view') || 
+               document.querySelector('flt-glass-pane');
+      }
+
+      function forceFullscreen() {
+        window.scrollTo(0, 0);
+        document.documentElement.style.height = window.innerHeight + 'px';
+        document.body.style.height = window.innerHeight + 'px';
+        
+        var host = getFlutterHost();
+        if (host) {
+          host.style.height = window.innerHeight + 'px';
+          // Also fix shadow DOM children
+          var shadow = host.shadowRoot;
+          if (shadow) {
+            var children = shadow.querySelectorAll('*');
+            children.forEach(function(el) {
+              if (el.style && (el.style.height || el.tagName.includes('flt'))) {
+                el.style.height = '100%';
+              }
+            });
+          }
+        }
+        window.dispatchEvent(new Event('resize'));
+      }
+
+      // On keyboard dismiss
+      document.addEventListener('focusout', function(e) {
+        // Stagger the fixes to catch iOS's delayed viewport restore
+        setTimeout(forceFullscreen, 50);
+        setTimeout(forceFullscreen, 150);
+        setTimeout(forceFullscreen, 350);
+        setTimeout(forceFullscreen, 600);
+      });
+
+      // Touch outside input = dismiss keyboard on iOS
+      document.addEventListener('touchstart', function(e) {
+        if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+          if (document.activeElement && 
+              (document.activeElement.tagName === 'INPUT' || 
+               document.activeElement.tagName === 'TEXTAREA')) {
+            document.activeElement.blur();
+          }
+        }
+      });
+
+      // Visual viewport is the most reliable signal on iOS
+      if (window.visualViewport) {
+        var keyboardOpen = false;
+        var fullHeight = window.innerHeight;
+        
+        window.visualViewport.addEventListener('resize', function() {
+          var currentHeight = window.visualViewport.height;
+          var wasOpen = keyboardOpen;
+          keyboardOpen = currentHeight < fullHeight * 0.75;
+          
+          if (wasOpen && !keyboardOpen) {
+            // Keyboard just closed
+            setTimeout(forceFullscreen, 50);
+            setTimeout(forceFullscreen, 200);
+            setTimeout(forceFullscreen, 500);
+          }
+        });
+      }
+
+      // Update fullHeight on orientation change
+      window.addEventListener('orientationchange', function() {
+        setTimeout(function() { 
+          fullHeight = window.innerHeight;
+          forceFullscreen(); 
+        }, 500);
+      });
+    })();
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

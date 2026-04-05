@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1059068225676",
+    "project_id": "myrwa-india",
+    "storage_bucket": "myrwa-india.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1059068225676:android:541077152d4e8be74e73a9",
+        "android_client_info": {
+          "package_name": "com.myrwa.india"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAGAcQbXwYJoZkUrFbAjVSp8H3uzgn6KkA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
