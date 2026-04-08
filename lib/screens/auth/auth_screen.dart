@@ -3,9 +3,10 @@ import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/auth_service.dart';
 import '../../services/notification_service.dart';
-import '../../utils/prefs_service.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
+import '../../utils/app_colors.dart';
+import '../../utils/app_spacing.dart';
 import '../home/main_shell.dart';
 
 class AuthScreen extends StatefulWidget {
@@ -27,6 +28,8 @@ class _AuthScreenState extends State<AuthScreen> {
   int _step = 0;
   bool _loading = false;
   String? _verificationId;
+
+  // --- Auth Logic (preserved exactly) ---
 
   void _sendOtp() {
     if (_phoneCtrl.text.length != 10) {
@@ -163,52 +166,211 @@ class _AuthScreenState extends State<AuthScreen> {
     super.dispose();
   }
 
+  bool get _isSector => _communityType == 'sector';
+
+  // --- Step metadata ---
+
+  static const _stepEmojis = ['\u{1F3E0}', '\u{1F4F1}', '\u{1F44B}', '\u{1F3D8}\u{FE0F}'];
+
+  String get _stepTitle {
+    switch (_step) {
+      case 0: return 'Welcome to your community';
+      case 1: return 'We sent you a code';
+      case 2: return 'Tell us about yourself';
+      case 3: return 'Find your community';
+      default: return '';
+    }
+  }
+
+  String get _stepSubtitle {
+    switch (_step) {
+      case 0: return "Let's get you set up in under a minute";
+      case 1: return 'Enter the 6-digit OTP sent to +91 ${_phoneCtrl.text}';
+      case 2: return 'Just a few details so your neighbours know you';
+      case 3: return 'Select your community type and society';
+      default: return '';
+    }
+  }
+
+  // --- Build ---
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: GestureDetector(
           onTap: () => FocusScope.of(context).unfocus(),
-          child: LayoutBuilder(
-            builder: (context, constraints) => SingleChildScrollView(
-              padding: const EdgeInsets.all(24),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(minHeight: constraints.maxHeight - 48),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 40),
-              Icon(Icons.apartment, size: 72, color: Theme.of(context).colorScheme.primary),
-              const SizedBox(height: 16),
-              Text('myRWA', textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Text(_stepSubtitle, textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.grey)),
-              const SizedBox(height: 40),
-              if (_step == 0) _phoneStep(),
-              if (_step == 1) _otpStep(),
-              if (_step == 2) _profileStep(),
-                  ],
-                ),
-              ),
-            ),
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 350),
+            switchInCurve: Curves.easeOut,
+            switchOutCurve: Curves.easeIn,
+            child: _buildStep(),
           ),
         ),
       ),
     );
   }
 
-  String get _stepSubtitle {
-    switch (_step) {
-      case 0: return 'Enter your phone number to get started';
-      case 1: return 'Enter the OTP sent to +91 ${_phoneCtrl.text}';
-      case 2: return 'Complete your profile';
-      default: return '';
-    }
+  Widget _buildStep() {
+    return KeyedSubtree(
+      key: ValueKey<int>(_step),
+      child: Column(
+        children: [
+          // Top illustrated area
+          Expanded(
+            flex: 2,
+            child: Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [AppColors.surfaceLight, Color(0xFFFEF3C7)],
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Spacer(),
+                  Text(
+                    _stepEmojis[_step],
+                    style: const TextStyle(fontSize: 72),
+                  ),
+                  const SizedBox(height: AppSpacing.xl),
+                  _buildProgressDots(),
+                  const SizedBox(height: AppSpacing.lg),
+                ],
+              ),
+            ),
+          ),
+          // Bottom form area
+          Expanded(
+            flex: 3,
+            child: Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusModal)),
+              ),
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.xxl, AppSpacing.xxl, AppSpacing.xxl, AppSpacing.lg,
+                  ),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight - AppSpacing.xxl - AppSpacing.lg),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        Text(
+                          _stepTitle,
+                          style: const TextStyle(
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          _stepSubtitle,
+                          style: const TextStyle(
+                            fontSize: 15,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                        const SizedBox(height: AppSpacing.xxl),
+                        if (_step == 0) _phoneStep(),
+                        if (_step == 1) _otpStep(),
+                        if (_step == 2) _profileStep(),
+                        if (_step == 3) _societyStep(),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
+
+  // --- Progress Dots ---
+
+  Widget _buildProgressDots() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(4, (i) {
+        final isCompleted = i < _step;
+        final isCurrent = i == _step;
+        final isFuture = i > _step;
+        return Row(
+          children: [
+            if (i > 0)
+              Container(
+                width: 24,
+                height: 2,
+                color: isCompleted ? AppColors.primaryAmber : AppColors.cardBorder,
+              ),
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: isCompleted
+                    ? AppColors.primaryAmber
+                    : isCurrent
+                        ? Colors.white
+                        : Colors.transparent,
+                border: Border.all(
+                  color: isFuture ? AppColors.textTertiary : AppColors.primaryAmber,
+                  width: 2,
+                ),
+                boxShadow: isCurrent
+                    ? [BoxShadow(color: AppColors.primaryAmber.withValues(alpha: 0.4), blurRadius: 8)]
+                    : null,
+              ),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+
+  // --- Action Button ---
+
+  Widget _buildActionButton({required String label, required VoidCallback? onPressed}) {
+    return GestureDetector(
+      onTap: _loading ? null : onPressed,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          gradient: (_loading ? null : AppColors.primaryGradient),
+          color: _loading ? AppColors.textTertiary : null,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
+        ),
+        alignment: Alignment.center,
+        child: _loading
+            ? const SizedBox(
+                height: 20, width: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+              )
+            : Text(
+                label,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+      ),
+    );
+  }
+
+  // --- Step 0: Phone ---
 
   Widget _phoneStep() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -225,31 +387,37 @@ class _AuthScreenState extends State<AuthScreen> {
           counterText: '',
         ),
       ),
-      const SizedBox(height: 20),
-      FilledButton(
-        onPressed: _loading ? null : _sendOtp,
-        style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-        child: _loading
-            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-            : const Text('Send OTP', style: TextStyle(fontSize: 16)),
-      ),
-      const SizedBox(height: 16),
+      const SizedBox(height: AppSpacing.xl),
+      _buildActionButton(label: 'Send OTP', onPressed: _sendOtp),
+      const SizedBox(height: AppSpacing.lg),
       const Row(
         children: [
           Expanded(child: Divider()),
-          Padding(padding: EdgeInsets.symmetric(horizontal: 16), child: Text('OR', style: TextStyle(color: Colors.grey))),
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: Text('OR', style: TextStyle(color: AppColors.textTertiary)),
+          ),
           Expanded(child: Divider()),
         ],
       ),
-      const SizedBox(height: 16),
+      const SizedBox(height: AppSpacing.lg),
       OutlinedButton.icon(
         onPressed: _loading ? null : _signInWithGoogle,
         icon: const Icon(Icons.g_mobiledata, size: 28),
         label: const Text('Sign in with Google', style: TextStyle(fontSize: 16)),
-        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          side: const BorderSide(color: AppColors.primaryAmber),
+          foregroundColor: AppColors.primaryAmber,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
+          ),
+        ),
       ),
     ],
   );
+
+  // --- Step 1: OTP ---
 
   Widget _otpStep() => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -267,46 +435,125 @@ class _AuthScreenState extends State<AuthScreen> {
           prefixIcon: Icon(Icons.lock),
         ),
       ),
-      const SizedBox(height: 20),
-      FilledButton(
-        onPressed: _loading ? null : _verifyOtp,
-        style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-        child: _loading
-            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-            : const Text('Verify OTP', style: TextStyle(fontSize: 16)),
+      const SizedBox(height: AppSpacing.xl),
+      _buildActionButton(label: 'Verify OTP', onPressed: _verifyOtp),
+      const SizedBox(height: AppSpacing.sm),
+      TextButton(
+        onPressed: () => setState(() => _step = 0),
+        child: const Text(
+          'Change number',
+          style: TextStyle(color: AppColors.primaryAmber),
+        ),
       ),
-      TextButton(onPressed: () => setState(() => _step = 0), child: const Text('Change number')),
     ],
   );
 
-  bool get _isSector => _communityType == 'sector';
+  // --- Step 2: Profile ---
+
+  Widget _profileStep() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      TextField(
+        controller: _nameCtrl,
+        textCapitalization: TextCapitalization.words,
+        decoration: const InputDecoration(
+          labelText: 'Full Name',
+          prefixIcon: Icon(Icons.person),
+        ),
+      ),
+      const SizedBox(height: AppSpacing.lg),
+      TextField(
+        controller: _flatCtrl,
+        textCapitalization: TextCapitalization.characters,
+        decoration: InputDecoration(
+          labelText: _isSector ? 'House Number (e.g. 42-B)' : 'Flat Number (e.g. A-101)',
+          prefixIcon: const Icon(Icons.home),
+        ),
+      ),
+      const SizedBox(height: AppSpacing.lg),
+      CheckboxListTile(
+        title: const Text('Login as Admin (Secretary/Committee)'),
+        subtitle: const Text('For demo: enables admin features', style: TextStyle(fontSize: 12)),
+        value: _loginAsAdmin,
+        activeColor: AppColors.primaryAmber,
+        onChanged: (v) => setState(() => _loginAsAdmin = v!),
+        contentPadding: EdgeInsets.zero,
+        controlAffinity: ListTileControlAffinity.leading,
+      ),
+      const SizedBox(height: AppSpacing.xl),
+      _buildActionButton(
+        label: 'Next',
+        onPressed: () {
+          if (_nameCtrl.text.isEmpty || _flatCtrl.text.isEmpty) {
+            showSnack(context, 'Please fill name and flat/house number', isError: true);
+            return;
+          }
+          setState(() => _step = 3);
+        },
+      ),
+    ],
+  );
+
+  // --- Step 3: Society Selection ---
+
+  Widget _societyStep() => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      _communityTypeSelector(),
+      const SizedBox(height: AppSpacing.lg),
+      DropdownButtonFormField<String>(
+        initialValue: _selectedSociety,
+        decoration: InputDecoration(
+          labelText: _isSector ? 'Select Sector/Colony' : 'Select Society',
+          prefixIcon: Icon(_isSector ? Icons.holiday_village : Icons.apartment),
+        ),
+        items: MockData.societyNames
+            .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+            .toList(),
+        onChanged: (v) => setState(() => _selectedSociety = v!),
+      ),
+      const SizedBox(height: AppSpacing.lg),
+      TextField(
+        decoration: InputDecoration(
+          labelText: _isSector ? 'Area Code (optional)' : 'Society Code (optional)',
+          prefixIcon: const Icon(Icons.vpn_key),
+          hintText: _isSector ? 'Enter code shared by your area' : 'Enter code shared by your society',
+        ),
+      ),
+      const SizedBox(height: AppSpacing.xxl),
+      _buildActionButton(
+        label: _isSector ? 'Join Community' : 'Join Society',
+        onPressed: _completeProfile,
+      ),
+      const SizedBox(height: AppSpacing.sm),
+      TextButton(
+        onPressed: () => setState(() => _step = 2),
+        child: const Text(
+          'Back',
+          style: TextStyle(color: AppColors.primaryAmber),
+        ),
+      ),
+    ],
+  );
+
+  // --- Community Type Selector ---
 
   Widget _communityTypeSelector() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Row(
       children: [
-        const Text('Community Type', style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            Expanded(child: _communityCard(
-              type: 'society',
-              emoji: '🏢',
-              title: 'Society',
-              subtitle: 'Apartment complex, gated society, housing society',
-              icon: Icons.apartment,
-            )),
-            const SizedBox(width: 12),
-            Expanded(child: _communityCard(
-              type: 'sector',
-              emoji: '🏘️',
-              title: 'Sector / Colony',
-              subtitle: 'Open sector, colony, neighbourhood area',
-              icon: Icons.holiday_village,
-            )),
-          ],
-        ),
-        const SizedBox(height: 20),
+        Expanded(child: _communityCard(
+          type: 'society',
+          emoji: '\u{1F3E2}',
+          title: 'Society',
+          subtitle: 'Apartment complex, gated society',
+        )),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(child: _communityCard(
+          type: 'sector',
+          emoji: '\u{1F3D8}\u{FE0F}',
+          title: 'Sector / Colony',
+          subtitle: 'Open sector, colony, neighbourhood',
+        )),
       ],
     );
   }
@@ -316,7 +563,6 @@ class _AuthScreenState extends State<AuthScreen> {
     required String emoji,
     required String title,
     required String subtitle,
-    required IconData icon,
   }) {
     final selected = _communityType == type;
     return GestureDetector(
@@ -325,14 +571,10 @@ class _AuthScreenState extends State<AuthScreen> {
         duration: const Duration(milliseconds: 200),
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: selected
-              ? Theme.of(context).colorScheme.primary.withValues(alpha: 0.08)
-              : Theme.of(context).cardColor,
-          borderRadius: BorderRadius.circular(14),
+          color: selected ? AppColors.amberBg : Colors.white,
+          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
           border: Border.all(
-            color: selected
-                ? Theme.of(context).colorScheme.primary
-                : Colors.grey.shade300,
+            color: selected ? AppColors.primaryAmber : AppColors.cardBorder,
             width: selected ? 2 : 1,
           ),
         ),
@@ -343,71 +585,15 @@ class _AuthScreenState extends State<AuthScreen> {
             Text(title, style: TextStyle(
               fontWeight: FontWeight.bold,
               fontSize: 13,
-              color: selected ? Theme.of(context).colorScheme.primary : null,
+              color: selected ? AppColors.primaryAmber : AppColors.textPrimary,
             )),
             const SizedBox(height: 4),
             Text(subtitle,
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+                style: const TextStyle(fontSize: 10, color: AppColors.textSecondary)),
           ],
         ),
       ),
     );
   }
-
-  Widget _profileStep() => Column(
-    crossAxisAlignment: CrossAxisAlignment.stretch,
-    children: [
-      _communityTypeSelector(),
-      TextField(
-        controller: _nameCtrl,
-        textCapitalization: TextCapitalization.words,
-        decoration: const InputDecoration(labelText: 'Full Name', prefixIcon: Icon(Icons.person)),
-      ),
-      const SizedBox(height: 16),
-      TextField(
-        controller: _flatCtrl,
-        textCapitalization: TextCapitalization.characters,
-        decoration: InputDecoration(
-          labelText: _isSector ? 'House Number (e.g. 42-B)' : 'Flat Number (e.g. A-101)',
-          prefixIcon: const Icon(Icons.home),
-        ),
-      ),
-      const SizedBox(height: 16),
-      DropdownButtonFormField<String>(
-        value: _selectedSociety,
-        decoration: InputDecoration(
-          labelText: _isSector ? 'Select Sector/Colony' : 'Select Society',
-          prefixIcon: Icon(_isSector ? Icons.holiday_village : Icons.apartment),
-        ),
-        items: MockData.societyNames.map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
-        onChanged: (v) => setState(() => _selectedSociety = v!),
-      ),
-      const SizedBox(height: 16),
-      TextField(
-        decoration: InputDecoration(
-          labelText: _isSector ? 'Area Code (optional)' : 'Society Code (optional)',
-          prefixIcon: const Icon(Icons.vpn_key),
-          hintText: _isSector ? 'Enter code shared by your area' : 'Enter code shared by your society',
-        ),
-      ),
-      const SizedBox(height: 8),
-      CheckboxListTile(
-        title: const Text('Login as Admin (Secretary/Committee)'),
-        subtitle: const Text('For demo: enables admin features', style: TextStyle(fontSize: 12)),
-        value: _loginAsAdmin,
-        onChanged: (v) => setState(() => _loginAsAdmin = v!),
-        contentPadding: EdgeInsets.zero,
-        controlAffinity: ListTileControlAffinity.leading,
-      ),
-      const SizedBox(height: 16),
-      FilledButton(
-        onPressed: _loading ? null : _completeProfile,
-        style: FilledButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 16)),
-        child: _loading
-            ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-            : Text(_isSector ? 'Join Community' : 'Join Society', style: const TextStyle(fontSize: 16)),
-      ),
-    ],
-  );
 }
