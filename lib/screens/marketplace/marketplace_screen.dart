@@ -1,9 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
 import '../../models/models.dart';
 import '../../utils/app_colors.dart';
+import '../../services/storage_service.dart';
 import '../chat/chat_screen.dart';
 
 class MarketplaceScreen extends StatefulWidget {
@@ -359,7 +361,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
     final titleCtrl = TextEditingController();
     final descCtrl = TextEditingController();
     final priceCtrl = TextEditingController();
-    bool addPhoto = false;
+    File? pickedImage;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -381,15 +383,40 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                 TextField(controller: priceCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Price (₹)', prefixText: '₹ ')),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
-                  onPressed: () => setBS(() => addPhoto = !addPhoto),
-                  icon: Icon(addPhoto ? Icons.check_circle : Icons.add_a_photo),
-                  label: Text(addPhoto ? 'Photo Added ✓' : 'Add Photo'),
-                  style: OutlinedButton.styleFrom(foregroundColor: addPhoto ? AppColors.statusSuccess : null),
+                  onPressed: () async {
+                    final file = await StorageService.showImagePicker(ctx);
+                    if (file != null) setBS(() => pickedImage = file);
+                  },
+                  icon: Icon(pickedImage != null ? Icons.check_circle : Icons.camera_alt),
+                  label: Text(pickedImage != null ? 'Photo attached' : 'Add Photo'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: pickedImage != null ? AppColors.statusSuccess : null,
+                    side: pickedImage != null ? const BorderSide(color: AppColors.statusSuccess) : null,
+                  ),
                 ),
+                if (pickedImage != null) ...[
+                  const SizedBox(height: 8),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.file(
+                      pickedImage!,
+                      height: 120,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ],
                 const SizedBox(height: 16),
                 FilledButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (titleCtrl.text.isNotEmpty && priceCtrl.text.isNotEmpty) {
+                      String? photoUrl;
+                      if (pickedImage != null) {
+                        photoUrl = await StorageService.uploadImage(
+                          pickedImage!,
+                          'marketplace/${DateTime.now().millisecondsSinceEpoch}.jpg',
+                        );
+                      }
                       setState(() {
                         _items.insert(0, MarketItem(
                           id: 'm_${DateTime.now().millisecondsSinceEpoch}',
@@ -397,9 +424,11 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                           price: double.tryParse(priceCtrl.text) ?? 0, category: 'Other',
                           seller: PrefsService.userName.isEmpty ? 'You' : PrefsService.userName,
                           sellerFlat: PrefsService.userFlat.isEmpty ? 'A-101' : PrefsService.userFlat,
-                          date: DateTime.now(), hasPhoto: addPhoto,
+                          date: DateTime.now(), hasPhoto: pickedImage != null,
+                          photoUrl: photoUrl,
                         ));
                       });
+                      if (!context.mounted) return;
                       Navigator.pop(ctx);
                       showSnack(context, '✅ Item listed!');
                     }

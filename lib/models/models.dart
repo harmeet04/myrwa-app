@@ -84,6 +84,7 @@ class Complaint {
   final DateTime date;
   String? adminResponse;
   bool hasPhoto;
+  String? photoUrl;
 
   Complaint({
     required this.id,
@@ -97,6 +98,7 @@ class Complaint {
     required this.date,
     this.adminResponse,
     this.hasPhoto = false,
+    this.photoUrl,
   });
 }
 
@@ -111,6 +113,7 @@ class MarketItem {
   final DateTime date;
   bool isSold;
   bool hasPhoto;
+  String? photoUrl;
 
   MarketItem({
     required this.id,
@@ -123,6 +126,7 @@ class MarketItem {
     required this.date,
     this.isSold = false,
     this.hasPhoto = false,
+    this.photoUrl,
   });
 }
 

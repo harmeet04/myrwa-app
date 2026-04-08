@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../utils/locale_provider.dart';
 import '../../utils/app_colors.dart';
+import '../../widgets/connectivity_banner.dart';
 import 'home_screen.dart';
 import 'community_screen.dart';
 import 'services_screen.dart';
@@ -29,7 +30,12 @@ class _MainShellState extends State<MainShell> {
     ];
 
     return Scaffold(
-      body: IndexedStack(index: _index, children: screens),
+      body: Column(
+        children: [
+          const ConnectivityBanner(),
+          Expanded(child: IndexedStack(index: _index, children: screens)),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (i) => setState(() => _index = i),

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,6 +11,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_spacing.dart';
 import '../../services/firestore_service.dart';
 import '../../services/ai_service.dart';
+import '../../services/storage_service.dart';
 import '../../widgets/filter_chip_bar.dart';
 import '../../widgets/warm_card.dart';
 import '../../widgets/status_chip.dart';
@@ -165,21 +167,17 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
             Text(c.description, style: const TextStyle(height: 1.5, color: AppColors.textSecondary)),
             if (c.hasPhoto) ...[
               const SizedBox(height: 12),
-              Container(
-                height: 120, width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppColors.amberBg,
-                  borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
-                  border: Border.all(color: AppColors.amberBorder),
-                ),
-                child: const Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.image, size: 40, color: AppColors.textTertiary),
-                    SizedBox(height: 4),
-                    Text('Photo Attached', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
-                  ],
-                ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+                child: c.photoUrl != null
+                    ? Image.network(
+                        c.photoUrl!,
+                        height: 120,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => _photoPlaceholder(),
+                      )
+                    : _photoPlaceholder(),
               ),
             ],
             if (c.adminResponse != null) ...[
@@ -283,7 +281,7 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
     final descCtrl = TextEditingController();
     String category = 'Plumbing';
     Priority priority = Priority.medium;
-    bool addPhoto = false;
+    File? pickedImage;
     bool isAiProcessing = false;
     bool aiApplied = false;
     String? aiRouteTo;
@@ -451,20 +449,27 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
                   ),
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
-                    onPressed: () => setBS(() => addPhoto = !addPhoto),
-                    icon: Icon(addPhoto ? Icons.check_circle : Icons.add_a_photo),
-                    label: Text(addPhoto ? 'Photo Added \u2713' : 'Attach Photo'),
+                    onPressed: () async {
+                      final file = await StorageService.showImagePicker(ctx);
+                      if (file != null) setBS(() => pickedImage = file);
+                    },
+                    icon: Icon(pickedImage != null ? Icons.check_circle : Icons.camera_alt),
+                    label: Text(pickedImage != null ? 'Photo attached' : 'Attach Photo'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: addPhoto ? AppColors.statusSuccess : AppColors.primaryAmber,
-                      side: BorderSide(color: addPhoto ? AppColors.statusSuccess : AppColors.primaryAmber),
+                      foregroundColor: pickedImage != null ? AppColors.statusSuccess : AppColors.primaryAmber,
+                      side: BorderSide(color: pickedImage != null ? AppColors.statusSuccess : AppColors.primaryAmber),
                     ),
                   ),
-                  if (addPhoto) ...[
+                  if (pickedImage != null) ...[
                     const SizedBox(height: 8),
-                    Container(
-                      height: 80,
-                      decoration: BoxDecoration(color: AppColors.amberBg, borderRadius: BorderRadius.circular(AppSpacing.radiusCard)),
-                      child: const Center(child: Icon(Icons.image, size: 32, color: AppColors.textTertiary)),
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+                      child: Image.file(
+                        pickedImage!,
+                        height: 120,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ],
                   const SizedBox(height: 16),
@@ -472,13 +477,21 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
                     onPressed: () async {
                       if (titleCtrl.text.isNotEmpty && descCtrl.text.isNotEmpty) {
                         HapticFeedback.mediumImpact();
+                        String? photoUrl;
+                        if (pickedImage != null) {
+                          photoUrl = await StorageService.uploadImage(
+                            pickedImage!,
+                            'complaints/${DateTime.now().millisecondsSinceEpoch}.jpg',
+                          );
+                        }
                         await FirestoreService.addComplaint(Complaint(
                           id: '',
                           title: titleCtrl.text, description: descCtrl.text,
                           category: category, status: ComplaintStatus.open, priority: priority,
                           raisedBy: PrefsService.userName.isEmpty ? 'You' : PrefsService.userName,
                           flat: PrefsService.userFlat.isEmpty ? 'A-101' : PrefsService.userFlat,
-                          date: DateTime.now(), hasPhoto: addPhoto,
+                          date: DateTime.now(), hasPhoto: pickedImage != null,
+                          photoUrl: photoUrl,
                         ));
                         AnalyticsService.logComplaintCreated(category);
                         if (!context.mounted) return;
@@ -494,6 +507,25 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  static Widget _photoPlaceholder() {
+    return Container(
+      height: 120,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.amberBg,
+        border: Border.all(color: AppColors.amberBorder),
+      ),
+      child: const Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.image, size: 40, color: AppColors.textTertiary),
+          SizedBox(height: 4),
+          Text('Photo Attached', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+        ],
       ),
     );
   }
