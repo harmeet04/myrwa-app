@@ -5,8 +5,16 @@ import '../../models/models.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
+import '../../utils/app_colors.dart';
+import '../../utils/app_spacing.dart';
 import '../../services/firestore_service.dart';
 import '../../services/ai_service.dart';
+import '../../widgets/filter_chip_bar.dart';
+import '../../widgets/warm_card.dart';
+import '../../widgets/status_chip.dart';
+import '../../widgets/priority_badge.dart';
+import '../../widgets/empty_state.dart';
+import '../../widgets/shimmer_loader.dart';
 import '../chat/chat_screen.dart';
 
 class ComplaintsScreen extends StatefulWidget {
@@ -16,34 +24,44 @@ class ComplaintsScreen extends StatefulWidget {
   State<ComplaintsScreen> createState() => _ComplaintsScreenState();
 }
 
-class _ComplaintsScreenState extends State<ComplaintsScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabCtrl;
+class _ComplaintsScreenState extends State<ComplaintsScreen> {
+  int _filterIndex = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    _tabCtrl = TabController(length: 3, vsync: this);
+  static const _filterOptions = ['All', '\u{1F534} Open', '\u{1F535} In Progress', '\u2705 Resolved'];
+
+  List<Complaint> _filterList(List<Complaint> all) {
+    switch (_filterIndex) {
+      case 1:
+        return all.where((c) => c.status == ComplaintStatus.open).toList();
+      case 2:
+        return all.where((c) => c.status == ComplaintStatus.inProgress).toList();
+      case 3:
+        return all.where((c) => c.status == ComplaintStatus.resolved).toList();
+      default:
+        return all;
+    }
   }
-
-  @override
-  void dispose() {
-    _tabCtrl.dispose();
-    super.dispose();
-  }
-
-  List<Complaint> _byStatus(List<Complaint> all, ComplaintStatus s) => all.where((c) => c.status == s).toList();
 
   @override
   Widget build(BuildContext context) {
     final society = PrefsService.societyName;
     return Scaffold(
+      backgroundColor: AppColors.scaffoldLight,
       appBar: AppBar(
         title: const Text('Complaints'),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddComplaint(context),
-        icon: const Icon(Icons.add),
-        label: const Text('New'),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: AppColors.fabShadow,
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: () => _showAddComplaint(context),
+          icon: const Icon(Icons.add),
+          label: const Text('New Complaint'),
+          backgroundColor: AppColors.primaryAmber,
+          foregroundColor: Colors.white,
+        ),
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: FirestoreService.complaintsStream(society),
@@ -52,33 +70,34 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> with SingleTickerPr
           if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
             complaints = snapshot.data!.docs.map((d) => FirestoreService.complaintFromDoc(d)).toList();
           } else if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            return Column(
+              children: [
+                const SizedBox(height: AppSpacing.md),
+                FilterChipBar(
+                  options: _filterOptions,
+                  selectedIndex: _filterIndex,
+                  onSelected: (i) => setState(() => _filterIndex = i),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                const Expanded(child: ShimmerLoader()),
+              ],
+            );
           } else {
             complaints = MockData.complaints;
           }
-          final open = _byStatus(complaints, ComplaintStatus.open);
-          final inProgress = _byStatus(complaints, ComplaintStatus.inProgress);
-          final resolved = _byStatus(complaints, ComplaintStatus.resolved);
+
+          final filtered = _filterList(complaints);
+
           return Column(
             children: [
-              TabBar(
-                controller: _tabCtrl,
-                tabs: [
-                  Tab(text: 'Open (${open.length})'),
-                  Tab(text: 'In Progress (${inProgress.length})'),
-                  Tab(text: 'Resolved (${resolved.length})'),
-                ],
+              const SizedBox(height: AppSpacing.md),
+              FilterChipBar(
+                options: _filterOptions,
+                selectedIndex: _filterIndex,
+                onSelected: (i) => setState(() => _filterIndex = i),
               ),
-              Expanded(
-                child: TabBarView(
-                  controller: _tabCtrl,
-                  children: [
-                    _buildList(open),
-                    _buildList(inProgress),
-                    _buildList(resolved),
-                  ],
-                ),
-              ),
+              const SizedBox(height: AppSpacing.sm),
+              Expanded(child: _buildList(filtered)),
             ],
           );
         },
@@ -88,21 +107,25 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> with SingleTickerPr
 
   Widget _buildList(List<Complaint> items) {
     if (items.isEmpty) {
-      return Center(child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.check_circle_outline, size: 72, color: Colors.grey.shade300),
-          const SizedBox(height: 12),
-          Text('No complaints here', style: TextStyle(fontSize: 16, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
-          const SizedBox(height: 4),
-          Text('All good! 🎉', style: TextStyle(fontSize: 13, color: Colors.grey.shade400)),
-        ],
-      ));
+      if (_filterIndex == 0) {
+        return const EmptyState(
+          emoji: '\u{1F389}',
+          title: 'No complaints \u2014 that\'s great!',
+          subtitle: 'Your community is running smoothly.',
+        );
+      }
+      final labels = ['', 'open', 'in progress', 'resolved'];
+      return EmptyState(
+        emoji: '\u2705',
+        title: 'No ${labels[_filterIndex]} complaints',
+        subtitle: 'Nothing here right now.',
+      );
     }
     return RefreshIndicator(
+      color: AppColors.primaryAmber,
       onRefresh: () async => await Future.delayed(const Duration(seconds: 1)),
       child: ListView.builder(
-        padding: const EdgeInsets.only(top: 8, bottom: 80),
+        padding: const EdgeInsets.fromLTRB(AppSpacing.lg, AppSpacing.sm, AppSpacing.lg, 80),
         itemCount: items.length,
         itemBuilder: (_, i) => _ComplaintCard(
           complaint: items[i],
@@ -118,41 +141,41 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> with SingleTickerPr
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: AppColors.scaffoldLight,
       builder: (_) => Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.textTertiary, borderRadius: BorderRadius.circular(2)))),
             const SizedBox(height: 16),
             Row(children: [
-              Expanded(child: Text(c.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
-              _StatusChip(status: c.status),
+              Expanded(child: Text(c.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary))),
+              StatusChip(label: _statusLabel(c.status)),
             ]),
             const SizedBox(height: 12),
             _InfoRow(icon: Icons.category, text: c.category),
-            _InfoRow(icon: Icons.flag, text: 'Priority: ${c.priority.name.toUpperCase()}', color: priorityColor(c.priority.name)),
-            _InfoRow(icon: Icons.person, text: '${c.raisedBy} • ${c.flat}'),
+            _InfoRow(icon: Icons.flag, text: 'Priority: ${c.priority.name.toUpperCase()}', color: AppColors.priorityColor(c.priority.name)),
+            _InfoRow(icon: Icons.person, text: '${c.raisedBy} \u2022 ${c.flat}'),
             _InfoRow(icon: Icons.calendar_today, text: formatDate(c.date)),
             const SizedBox(height: 12),
-            Text(c.description, style: const TextStyle(height: 1.5)),
+            Text(c.description, style: const TextStyle(height: 1.5, color: AppColors.textSecondary)),
             if (c.hasPhoto) ...[
               const SizedBox(height: 12),
               Container(
                 height: 120, width: double.infinity,
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
+                  color: AppColors.amberBg,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+                  border: Border.all(color: AppColors.amberBorder),
                 ),
-                child: Column(
+                child: const Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.image, size: 40, color: Colors.grey.shade400),
-                    const SizedBox(height: 4),
-                    Text('Photo Attached', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                    Icon(Icons.image, size: 40, color: AppColors.textTertiary),
+                    SizedBox(height: 4),
+                    Text('Photo Attached', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                   ],
                 ),
               ),
@@ -162,20 +185,20 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> with SingleTickerPr
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.blue.shade50,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.blue.shade100),
+                  color: AppColors.amberBg,
+                  borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+                  border: Border.all(color: AppColors.amberBorder),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(children: [
-                      Icon(Icons.admin_panel_settings, size: 16, color: Colors.blue.shade700),
-                      const SizedBox(width: 6),
-                      Text('Admin Response', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade700)),
+                    const Row(children: [
+                      Icon(Icons.admin_panel_settings, size: 16, color: AppColors.primaryOrange),
+                      SizedBox(width: 6),
+                      Text('Admin Response', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryOrange)),
                     ]),
                     const SizedBox(height: 6),
-                    Text(c.adminResponse!),
+                    Text(c.adminResponse!, style: const TextStyle(color: AppColors.textPrimary)),
                   ],
                 ),
               ),
@@ -192,6 +215,10 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> with SingleTickerPr
                 },
                 icon: const Icon(Icons.chat),
                 label: const Text('Discuss with Admin'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primaryAmber,
+                  side: const BorderSide(color: AppColors.primaryAmber),
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -207,7 +234,7 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> with SingleTickerPr
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: AppColors.scaffoldLight,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setBS) => Padding(
           padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
@@ -215,12 +242,12 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> with SingleTickerPr
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Respond: ${c.title}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text('Respond: ${c.title}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
               const SizedBox(height: 16),
               TextField(controller: respCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Admin Response')),
               const SizedBox(height: 12),
               DropdownButtonFormField<ComplaintStatus>(
-                value: newStatus,
+                initialValue: newStatus,
                 decoration: const InputDecoration(labelText: 'Update Status'),
                 items: ComplaintStatus.values.map((s) => DropdownMenuItem(
                   value: s,
@@ -239,6 +266,7 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> with SingleTickerPr
                   Navigator.pop(ctx);
                   showSnack(context, 'Response saved!');
                 },
+                style: FilledButton.styleFrom(backgroundColor: AppColors.primaryAmber),
                 child: const Text('Save Response'),
               ),
             ],
@@ -267,7 +295,7 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> with SingleTickerPr
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: AppColors.scaffoldLight,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setBS) {
 
@@ -327,7 +355,7 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> with SingleTickerPr
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('Raise Complaint', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                  const Text('Raise Complaint', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary)),
                   const SizedBox(height: 16),
                   // Title with mic
                   TextField(
@@ -337,7 +365,7 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> with SingleTickerPr
                       suffixIcon: IconButton(
                         icon: Icon(
                           isListening && voiceTarget == 'title' ? Icons.mic : Icons.mic_none,
-                          color: isListening && voiceTarget == 'title' ? Colors.red : null,
+                          color: isListening && voiceTarget == 'title' ? AppColors.statusError : null,
                         ),
                         onPressed: () => toggleListening('title'),
                       ),
@@ -353,7 +381,7 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> with SingleTickerPr
                       suffixIcon: IconButton(
                         icon: Icon(
                           isListening && voiceTarget == 'description' ? Icons.mic : Icons.mic_none,
-                          color: isListening && voiceTarget == 'description' ? Colors.red : null,
+                          color: isListening && voiceTarget == 'description' ? AppColors.statusError : null,
                         ),
                         onPressed: () => toggleListening('description'),
                       ),
@@ -363,9 +391,9 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> with SingleTickerPr
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2)),
+                        const SizedBox(width: 12, height: 12, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryAmber)),
                         const SizedBox(width: 8),
-                        Text('Listening... (${voiceTarget})', style: TextStyle(fontSize: 12, color: Colors.red.shade400, fontStyle: FontStyle.italic)),
+                        Text('Listening... ($voiceTarget)', style: const TextStyle(fontSize: 12, color: AppColors.statusError, fontStyle: FontStyle.italic)),
                       ],
                     ),
                   ],
@@ -374,12 +402,12 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> with SingleTickerPr
                   OutlinedButton.icon(
                     onPressed: isAiProcessing ? null : runAiCategorization,
                     icon: isAiProcessing
-                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Text('✨', style: TextStyle(fontSize: 16)),
-                    label: Text(isAiProcessing ? 'AI Analyzing...' : aiApplied ? 'AI Applied ✓' : '✨ AI Auto-Categorize'),
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primaryAmber))
+                        : const Text('\u2728', style: TextStyle(fontSize: 16)),
+                    label: Text(isAiProcessing ? 'AI Analyzing...' : aiApplied ? 'AI Applied \u2713' : '\u2728 AI Auto-Categorize'),
                     style: OutlinedButton.styleFrom(
-                      foregroundColor: aiApplied ? Colors.green : null,
-                      side: aiApplied ? const BorderSide(color: Colors.green) : null,
+                      foregroundColor: aiApplied ? AppColors.statusSuccess : AppColors.primaryAmber,
+                      side: BorderSide(color: aiApplied ? AppColors.statusSuccess : AppColors.primaryAmber),
                     ),
                   ),
                   if (aiApplied && aiRouteTo != null) ...[
@@ -387,35 +415,35 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> with SingleTickerPr
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.purple.shade50,
+                        color: AppColors.amberBg,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.purple.shade200),
+                        border: Border.all(color: AppColors.amberBorder),
                       ),
                       child: Row(
                         children: [
-                          Icon(Icons.route, size: 16, color: Colors.purple.shade600),
+                          const Icon(Icons.route, size: 16, color: AppColors.primaryOrange),
                           const SizedBox(width: 8),
-                          Expanded(child: Text('Auto-routed to: $aiRouteTo', style: TextStyle(fontSize: 12, color: Colors.purple.shade700, fontWeight: FontWeight.w500))),
+                          Expanded(child: Text('Auto-routed to: $aiRouteTo', style: const TextStyle(fontSize: 12, color: AppColors.primaryOrange, fontWeight: FontWeight.w500))),
                         ],
                       ),
                     ),
                   ],
                   const SizedBox(height: 12),
                   DropdownButtonFormField<String>(
-                    value: categories.contains(category) ? category : 'Other',
+                    initialValue: categories.contains(category) ? category : 'Other',
                     decoration: const InputDecoration(labelText: 'Category'),
                     items: categories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
                     onChanged: (v) => setBS(() => category = v!),
                   ),
                   const SizedBox(height: 12),
                   DropdownButtonFormField<Priority>(
-                    value: priority,
+                    initialValue: priority,
                     decoration: const InputDecoration(labelText: 'Priority'),
                     items: Priority.values.map((p) => DropdownMenuItem(value: p,
                       child: Row(children: [
-                        Icon(Icons.circle, size: 12, color: priorityColor(p.name)),
+                        Icon(Icons.circle, size: 12, color: AppColors.priorityColor(p.name)),
                         const SizedBox(width: 8),
-                        Text(p.name.toUpperCase(), style: TextStyle(color: priorityColor(p.name), fontWeight: FontWeight.w600)),
+                        Text(p.name.toUpperCase(), style: TextStyle(color: AppColors.priorityColor(p.name), fontWeight: FontWeight.w600)),
                       ]))).toList(),
                     onChanged: (v) => setBS(() => priority = v!),
                   ),
@@ -423,35 +451,24 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> with SingleTickerPr
                   OutlinedButton.icon(
                     onPressed: () => setBS(() => addPhoto = !addPhoto),
                     icon: Icon(addPhoto ? Icons.check_circle : Icons.add_a_photo),
-                    label: Text(addPhoto ? 'Photo Added ✓' : 'Attach Photo'),
-                    style: OutlinedButton.styleFrom(foregroundColor: addPhoto ? Colors.green : null),
+                    label: Text(addPhoto ? 'Photo Added \u2713' : 'Attach Photo'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: addPhoto ? AppColors.statusSuccess : AppColors.primaryAmber,
+                      side: BorderSide(color: addPhoto ? AppColors.statusSuccess : AppColors.primaryAmber),
+                    ),
                   ),
                   if (addPhoto) ...[
                     const SizedBox(height: 8),
                     Container(
                       height: 80,
-                      decoration: BoxDecoration(color: Colors.grey.shade200, borderRadius: BorderRadius.circular(12)),
-                      child: Center(child: Icon(Icons.image, size: 32, color: Colors.grey.shade400)),
+                      decoration: BoxDecoration(color: AppColors.amberBg, borderRadius: BorderRadius.circular(AppSpacing.radiusCard)),
+                      child: const Center(child: Icon(Icons.image, size: 32, color: AppColors.textTertiary)),
                     ),
                   ],
                   const SizedBox(height: 16),
                   FilledButton(
                     onPressed: () async {
                       if (titleCtrl.text.isNotEmpty && descCtrl.text.isNotEmpty) {
-                        final complaintData = {
-                          'title': titleCtrl.text,
-                          'description': descCtrl.text,
-                          'category': category,
-                          'status': ComplaintStatus.open.name,
-                          'priority': priority.name,
-                          'raisedBy': PrefsService.userName.isEmpty ? 'You' : PrefsService.userName,
-                          'flat': PrefsService.userFlat.isEmpty ? 'A-101' : PrefsService.userFlat,
-                          'date': Timestamp.fromDate(DateTime.now()),
-                          'hasPhoto': addPhoto,
-                          'society': PrefsService.societyName,
-                          if (aiRouteTo != null) 'aiRouteTo': aiRouteTo,
-                          'aiCategorized': aiApplied,
-                        };
                         await FirestoreService.addComplaint(Complaint(
                           id: '',
                           title: titleCtrl.text, description: descCtrl.text,
@@ -462,9 +479,10 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> with SingleTickerPr
                         ));
                         if (!context.mounted) return;
                         Navigator.pop(ctx);
-                        showSnack(context, '✅ Complaint raised successfully!${aiApplied ? ' (AI categorized)' : ''}');
+                        showSnack(context, '\u2705 Complaint raised successfully!${aiApplied ? ' (AI categorized)' : ''}');
                       }
                     },
+                    style: FilledButton.styleFrom(backgroundColor: AppColors.primaryAmber),
                     child: const Text('Submit'),
                   ),
                 ],
@@ -474,6 +492,61 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> with SingleTickerPr
         },
       ),
     );
+  }
+
+  static String _statusLabel(ComplaintStatus status) {
+    switch (status) {
+      case ComplaintStatus.open:
+        return 'Open';
+      case ComplaintStatus.inProgress:
+        return 'In Progress';
+      case ComplaintStatus.resolved:
+        return 'Resolved';
+    }
+  }
+}
+
+/// Returns a pastel background color for a complaint category.
+Color _categoryBgColor(String category) {
+  switch (category.toLowerCase()) {
+    case 'plumbing' || 'water':
+      return AppColors.blueBg;
+    case 'electrical' || 'electricity':
+      return AppColors.amberBg;
+    case 'security':
+      return AppColors.redBg;
+    case 'cleaning' || 'cleanliness' || 'housekeeping':
+      return AppColors.greenBg;
+    case 'noise':
+      return AppColors.purpleBg;
+    case 'parking':
+      return AppColors.blueBg;
+    case 'lift' || 'elevator':
+      return AppColors.pinkBg;
+    default:
+      return AppColors.amberBg;
+  }
+}
+
+/// Returns a foreground icon color for a complaint category.
+Color _categoryFgColor(String category) {
+  switch (category.toLowerCase()) {
+    case 'plumbing' || 'water':
+      return const Color(0xFF2563EB);
+    case 'electrical' || 'electricity':
+      return AppColors.primaryAmber;
+    case 'security':
+      return AppColors.statusError;
+    case 'cleaning' || 'cleanliness' || 'housekeeping':
+      return AppColors.statusSuccess;
+    case 'noise':
+      return const Color(0xFF7C3AED);
+    case 'parking':
+      return const Color(0xFF2563EB);
+    case 'lift' || 'elevator':
+      return const Color(0xFFDB2777);
+    default:
+      return AppColors.primaryOrange;
   }
 }
 
@@ -487,150 +560,74 @@ class _ComplaintCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = complaint;
-    final pColor = priorityColor(c.priority.name);
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+    return WarmCard(
+      onTap: onTap,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Row 1: Icon + title/subtitle + priority badge
+          Row(
             children: [
-              Row(children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: pColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(categoryIcon(c.category), color: pColor, size: 22),
+              Container(
+                width: 32, height: 32,
+                decoration: BoxDecoration(
+                  color: _categoryBgColor(c.category),
+                  borderRadius: BorderRadius.circular(8),
                 ),
-                const SizedBox(width: 12),
-                Expanded(child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(children: [
-                      Expanded(child: Text(c.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15))),
-                      if (c.hasPhoto) Padding(
-                        padding: const EdgeInsets.only(left: 4),
-                        child: Icon(Icons.photo_camera, size: 16, color: Colors.grey.shade500),
-                      ),
-                    ]),
-                    const SizedBox(height: 4),
-                    Text('${c.raisedBy} • ${c.flat} • ${timeAgo(c.date)}', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                  ],
-                )),
-              ]),
-              const SizedBox(height: 10),
-              Text(c.description, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
-              const SizedBox(height: 10),
-              Row(children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                  decoration: BoxDecoration(
-                    color: pColor.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: pColor.withValues(alpha: 0.3)),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (c.priority == Priority.high) _PulsingDot(color: pColor) else Icon(Icons.circle, size: 8, color: pColor),
-                      const SizedBox(width: 4),
-                      Text(c.priority.name.toUpperCase(), style: TextStyle(fontSize: 10, color: pColor, fontWeight: FontWeight.bold)),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                _StatusChip(status: c.status),
-                const Spacer(),
-                if (isAdmin && c.status != ComplaintStatus.resolved)
-                  InkWell(
-                    onTap: onRespond,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: Colors.blue.shade50,
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.blue.shade200),
-                      ),
-                      child: const Text('Respond', style: TextStyle(fontSize: 11, color: Colors.blue, fontWeight: FontWeight.bold)),
-                    ),
-                  ),
-              ]),
+                child: Icon(categoryIcon(c.category), size: 16, color: _categoryFgColor(c.category)),
+              ),
+              const SizedBox(width: AppSpacing.md),
+              Expanded(child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(c.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.textPrimary), maxLines: 1, overflow: TextOverflow.ellipsis),
+                  const SizedBox(height: 2),
+                  Text('Flat ${c.flat} \u2022 ${timeAgo(c.date)}', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                ],
+              )),
+              const SizedBox(width: AppSpacing.sm),
+              PriorityBadge(priority: c.priority.name),
             ],
           ),
-        ),
+          // Row 2: Description preview
+          if (c.description.isNotEmpty) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Text(c.description, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+          ],
+          // Row 3: Status chip + reply indicator + admin respond
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            children: [
+              StatusChip(label: _ComplaintsScreenState._statusLabel(c.status)),
+              const Spacer(),
+              if (c.adminResponse != null)
+                const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text('\u{1F4AC}', style: TextStyle(fontSize: 11)),
+                    SizedBox(width: 2),
+                    Text('1', style: TextStyle(fontSize: 11, color: AppColors.textTertiary)),
+                  ],
+                ),
+              if (isAdmin && c.status != ComplaintStatus.resolved) ...[
+                const SizedBox(width: AppSpacing.sm),
+                InkWell(
+                  onTap: onRespond,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: AppColors.amberBg,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.amberBorder),
+                    ),
+                    child: const Text('Respond', style: TextStyle(fontSize: 11, color: AppColors.primaryOrange, fontWeight: FontWeight.bold)),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ],
       ),
-    );
-  }
-}
-
-class _PulsingDot extends StatefulWidget {
-  final Color color;
-  const _PulsingDot({required this.color});
-  @override
-  State<_PulsingDot> createState() => _PulsingDotState();
-}
-
-class _PulsingDotState extends State<_PulsingDot> with SingleTickerProviderStateMixin {
-  late AnimationController _ctrl;
-  @override
-  void initState() {
-    super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 800))..repeat(reverse: true);
-  }
-  @override
-  void dispose() { _ctrl.dispose(); super.dispose(); }
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: _ctrl,
-      builder: (_, __) => Container(
-        width: 8, height: 8,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          color: widget.color.withValues(alpha: 0.5 + _ctrl.value * 0.5),
-          boxShadow: [BoxShadow(color: widget.color.withValues(alpha: _ctrl.value * 0.5), blurRadius: 4, spreadRadius: 1)],
-        ),
-      ),
-    );
-  }
-}
-
-class AnimatedBuilder extends AnimatedWidget {
-  final Widget Function(BuildContext, Widget?) builder;
-  final Widget? child;
-  const AnimatedBuilder({super.key, required Animation<double> animation, required this.builder, this.child})
-      : super(listenable: animation);
-  @override
-  Widget build(BuildContext context) => builder(context, child);
-}
-
-class _StatusChip extends StatelessWidget {
-  final ComplaintStatus status;
-  const _StatusChip({required this.status});
-
-  String get _label {
-    switch (status) {
-      case ComplaintStatus.open: return 'Open';
-      case ComplaintStatus.inProgress: return 'In Progress';
-      case ComplaintStatus.resolved: return 'Resolved';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final color = statusColor(_label);
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Text(_label, style: TextStyle(fontSize: 11, color: color, fontWeight: FontWeight.bold)),
     );
   }
 }
@@ -646,9 +643,9 @@ class _InfoRow extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(children: [
-        Icon(icon, size: 16, color: color ?? Colors.grey.shade600),
+        Icon(icon, size: 16, color: color ?? AppColors.textSecondary),
         const SizedBox(width: 8),
-        Text(text, style: TextStyle(color: color ?? Colors.grey.shade700)),
+        Text(text, style: TextStyle(color: color ?? AppColors.textSecondary)),
       ]),
     );
   }
