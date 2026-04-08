@@ -14,6 +14,7 @@ class PrefsService {
 
   static bool get hasOnboarded => _prefs.getBool('hasOnboarded') ?? false;
   static set hasOnboarded(bool v) => _prefs.setBool('hasOnboarded', v);
+  static Future<void> setOnboarded() async => await _prefs.setBool('hasOnboarded', true);
 
   // Profile
   static String get userName => _prefs.getString('userName') ?? '';

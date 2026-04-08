@@ -5,6 +5,7 @@ import '../../services/notification_service.dart';
 import '../../utils/app_colors.dart';
 import '../auth/auth_screen.dart';
 import '../home/main_shell.dart';
+import '../onboarding/onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   final VoidCallback onThemeToggle;
@@ -37,7 +38,11 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     if (AuthService.isLoggedIn && PrefsService.isLoggedIn) {
       await AuthService.loadUserProfile();
       await NotificationService.init();
-      dest = MainShell(onThemeToggle: widget.onThemeToggle);
+      if (!PrefsService.hasOnboarded) {
+        dest = OnboardingScreen(onThemeToggle: widget.onThemeToggle);
+      } else {
+        dest = MainShell(onThemeToggle: widget.onThemeToggle);
+      }
     } else {
       dest = AuthScreen(onThemeToggle: widget.onThemeToggle);
     }
