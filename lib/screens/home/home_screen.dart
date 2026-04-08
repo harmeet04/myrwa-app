@@ -17,10 +17,27 @@ import '../polls/polls_screen.dart';
 import '../gate_log/gate_log_screen.dart';
 import '../qr_pass/qr_pass_screen.dart';
 import '../sos/sos_screen.dart';
+import '../complaints/complaints_screen.dart';
+import '../directory/directory_screen.dart';
 import 'community_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+  bool _isSearching = false;
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   String _greeting() {
     final hour = DateTime.now().hour;
@@ -31,6 +48,21 @@ class HomeScreen extends StatelessWidget {
 
   void _push(BuildContext context, Widget screen) {
     Navigator.of(context).push(MaterialPageRoute(builder: (_) => screen));
+  }
+
+  void _onSearchChanged(String value) {
+    setState(() {
+      _searchQuery = value;
+      _isSearching = value.isNotEmpty;
+    });
+  }
+
+  void _clearSearch() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+      _isSearching = false;
+    });
   }
 
   @override
@@ -63,32 +95,322 @@ class HomeScreen extends StatelessWidget {
               ),
             ),
 
-            // 2. Needs Your Attention
+            // 2. Search Bar
             SliverToBoxAdapter(
-              child: _NeedsAttentionSection(
-                onPush: (w) => _push(context, w),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.xl,
+                  vertical: AppSpacing.sm,
+                ),
+                child: TextField(
+                  controller: _searchController,
+                  onChanged: _onSearchChanged,
+                  decoration: InputDecoration(
+                    hintText: 'Search complaints, notices, visitors...',
+                    hintStyle: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.textTertiary,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search,
+                      color: AppColors.textTertiary,
+                      size: 20,
+                    ),
+                    suffixIcon: _searchQuery.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(
+                              Icons.close,
+                              color: AppColors.textTertiary,
+                              size: 20,
+                            ),
+                            onPressed: _clearSearch,
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: AppColors.surfaceLight,
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.md,
+                      vertical: AppSpacing.md,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.radiusCard),
+                      borderSide:
+                          const BorderSide(color: AppColors.cardBorder),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.radiusCard),
+                      borderSide:
+                          const BorderSide(color: AppColors.cardBorder),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.radiusCard),
+                      borderSide: const BorderSide(
+                          color: AppColors.primaryAmber, width: 1.5),
+                    ),
+                  ),
+                ),
               ),
             ),
 
-            // 3. Quick Access
-            SliverToBoxAdapter(
-              child: _QuickAccessSection(
-                onPush: (w) => _push(context, w),
+            // 3. Content: search results or normal home sections
+            if (_isSearching && _searchQuery.isNotEmpty)
+              SliverToBoxAdapter(
+                child: _SearchResults(
+                  query: _searchQuery,
+                  onPush: (w) => _push(context, w),
+                ),
+              )
+            else ...[
+              // Needs Your Attention
+              SliverToBoxAdapter(
+                child: _NeedsAttentionSection(
+                  onPush: (w) => _push(context, w),
+                ),
               ),
-            ),
 
-            // 4. Community Feed
-            SliverToBoxAdapter(
-              child: _CommunityFeedSection(
-                onPush: (w) => _push(context, w),
+              // Quick Access
+              SliverToBoxAdapter(
+                child: _QuickAccessSection(
+                  onPush: (w) => _push(context, w),
+                ),
               ),
-            ),
+
+              // Community Feed
+              SliverToBoxAdapter(
+                child: _CommunityFeedSection(
+                  onPush: (w) => _push(context, w),
+                ),
+              ),
+            ],
 
             const SliverToBoxAdapter(child: SizedBox(height: 80)),
           ],
         ),
       ),
     );
+  }
+}
+
+// ─── Search Results ───
+class _SearchResult {
+  final String type;
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color iconColor;
+  final Widget targetScreen;
+
+  const _SearchResult({
+    required this.type,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.iconColor,
+    required this.targetScreen,
+  });
+}
+
+class _SearchResults extends StatelessWidget {
+  final String query;
+  final void Function(Widget) onPush;
+
+  const _SearchResults({required this.query, required this.onPush});
+
+  List<_SearchResult> _gatherResults(String q) {
+    final lower = q.toLowerCase();
+    final results = <_SearchResult>[];
+
+    // Complaints
+    for (final c in MockData.complaints) {
+      if (c.title.toLowerCase().contains(lower) ||
+          c.description.toLowerCase().contains(lower) ||
+          c.category.toLowerCase().contains(lower)) {
+        results.add(_SearchResult(
+          type: 'Complaints',
+          title: c.title,
+          subtitle: '${c.category} \u2022 ${c.status.name}',
+          icon: Icons.report_problem_outlined,
+          iconColor: AppColors.statusError,
+          targetScreen: const ComplaintsScreen(),
+        ));
+      }
+    }
+
+    // Notices
+    for (final n in MockData.notices) {
+      if (n.title.toLowerCase().contains(lower) ||
+          n.body.toLowerCase().contains(lower) ||
+          n.category.toLowerCase().contains(lower)) {
+        results.add(_SearchResult(
+          type: 'Notices',
+          title: n.title,
+          subtitle: '${n.category} \u2022 ${timeAgo(n.date)}',
+          icon: Icons.campaign_outlined,
+          iconColor: AppColors.primaryAmber,
+          targetScreen: const NoticesScreen(),
+        ));
+      }
+    }
+
+    // Visitors
+    for (final v in MockData.visitors) {
+      if (v.name.toLowerCase().contains(lower) ||
+          v.purpose.toLowerCase().contains(lower)) {
+        results.add(_SearchResult(
+          type: 'Visitors',
+          title: v.name,
+          subtitle: '${v.purpose} \u2022 ${v.status.name}',
+          icon: Icons.directions_walk_outlined,
+          iconColor: AppColors.statusWarning,
+          targetScreen: const VisitorsScreen(),
+        ));
+      }
+    }
+
+    // Residents
+    for (final r in MockData.residents) {
+      if (r.name.toLowerCase().contains(lower) ||
+          r.flat.toLowerCase().contains(lower) ||
+          r.phone.toLowerCase().contains(lower)) {
+        results.add(_SearchResult(
+          type: 'Residents',
+          title: r.name,
+          subtitle: 'Flat ${r.flat} \u2022 ${r.phone}',
+          icon: Icons.person_outlined,
+          iconColor: AppColors.statusSuccess,
+          targetScreen: const DirectoryScreen(),
+        ));
+      }
+    }
+
+    return results;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final results = _gatherResults(query);
+
+    if (results.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.xl,
+          vertical: AppSpacing.xxxl,
+        ),
+        child: Column(
+          children: [
+            const Text('\uD83D\uDD0D', style: TextStyle(fontSize: 48)),
+            const SizedBox(height: AppSpacing.md),
+            const Text(
+              'No results found',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Text(
+              'Try searching for something else',
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Group by type
+    final grouped = <String, List<_SearchResult>>{};
+    for (final r in results) {
+      grouped.putIfAbsent(r.type, () => []).add(r);
+    }
+
+    final sections = <Widget>[];
+    grouped.forEach((type, items) {
+      // Section header
+      sections.add(
+        Padding(
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xl, AppSpacing.lg, AppSpacing.xl, AppSpacing.xs),
+          child: Text(
+            type,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textTertiary,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ),
+      );
+
+      // Items
+      for (final item in items) {
+        sections.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+            child: WarmCard(
+              onTap: () => onPush(item.targetScreen),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: item.iconColor.withValues(alpha: 0.12),
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.radiusIcon),
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(item.icon, color: item.iconColor, size: 20),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textPrimary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          item.subtitle,
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: AppColors.textSecondary,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(
+                    Icons.chevron_right,
+                    color: AppColors.textTertiary,
+                    size: 18,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      }
+    });
+
+    return Column(children: sections);
   }
 }
 
