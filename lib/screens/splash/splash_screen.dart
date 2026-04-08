@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/notification_service.dart';
+import '../../utils/app_colors.dart';
 import '../auth/auth_screen.dart';
 import '../home/main_shell.dart';
 
@@ -15,15 +16,15 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
-  late Animation<double> _fadeIn;
+  late Animation<double> _fade;
   late Animation<double> _scale;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1500));
-    _fadeIn = Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(parent: _ctrl, curve: const Interval(0, 0.5, curve: Curves.easeIn)));
-    _scale = Tween<double>(begin: 0.5, end: 1).animate(CurvedAnimation(parent: _ctrl, curve: const Interval(0, 0.5, curve: Curves.elasticOut)));
+    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200));
+    _fade = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
+    _scale = Tween<double>(begin: 0.8, end: 1.0).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOutBack));
     _ctrl.forward();
     _navigate();
   }
@@ -34,13 +35,13 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     Widget dest;
     if (AuthService.isLoggedIn && PrefsService.isLoggedIn) {
-      // Refresh profile from Firestore & init notifications
       await AuthService.loadUserProfile();
       await NotificationService.init();
       dest = MainShell(onThemeToggle: widget.onThemeToggle);
     } else {
       dest = AuthScreen(onThemeToggle: widget.onThemeToggle);
     }
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) => dest,
@@ -59,29 +60,44 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF1565C0),
-      body: Center(
-        child: AnimatedBuilder(
-          listenable: _ctrl,
-          builder: (context, child) => Opacity(
-            opacity: _fadeIn.value,
-            child: Transform.scale(
-              scale: _scale.value,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [Color(0xFFFFFBEB), Color(0xFFFEF3C7), Color(0xFFFDE68A)],
+          ),
+        ),
+        child: Center(
+          child: FadeTransition(
+            opacity: _fade,
+            child: ScaleTransition(
+              scale: _scale,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    padding: const EdgeInsets.all(20),
+                    width: 100,
+                    height: 100,
                     decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
+                      gradient: AppColors.primaryGradient,
+                      borderRadius: BorderRadius.circular(28),
+                      boxShadow: AppColors.fabShadow,
                     ),
-                    child: const Icon(Icons.apartment, size: 64, color: Color(0xFF1565C0)),
+                    child: const Center(
+                      child: Text('🏠', style: TextStyle(fontSize: 48)),
+                    ),
                   ),
                   const SizedBox(height: 24),
-                  const Text('myRWA', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.white)),
+                  const Text(
+                    'myRWA',
+                    style: TextStyle(fontSize: 32, fontWeight: FontWeight.w800, color: AppColors.textPrimary, letterSpacing: -0.5),
+                  ),
                   const SizedBox(height: 8),
-                  Text('Your Society, Connected', style: TextStyle(fontSize: 16, color: Colors.white.withValues(alpha: 0.8))),
+                  const Text(
+                    'Your community, simplified',
+                    style: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+                  ),
                 ],
               ),
             ),
@@ -90,14 +106,4 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       ),
     );
   }
-}
-
-class AnimatedBuilder extends AnimatedWidget {
-  final Widget Function(BuildContext, Widget?) builder;
-  const AnimatedBuilder({super.key, required super.listenable, required this.builder});
-
-  @override
-  Widget build(BuildContext context) => builder(context, null);
-
-  Animation<double> get animation => listenable as Animation<double>;
 }
