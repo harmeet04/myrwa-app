@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
+import '../../utils/app_colors.dart';
 
 class PackagesScreen extends StatefulWidget {
   const PackagesScreen({super.key});
@@ -88,10 +89,10 @@ class _PackagesScreenState extends State<PackagesScreen> with SingleTickerProvid
     if (items.isEmpty) {
       return Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
-          Icon(isCollected ? Icons.inventory_2_outlined : Icons.markunread_mailbox_outlined, size: 72, color: Colors.grey.shade300),
+          Icon(isCollected ? Icons.inventory_2_outlined : Icons.markunread_mailbox_outlined, size: 72, color: AppColors.cardBorder),
           const SizedBox(height: 16),
           Text(isCollected ? 'No collected packages yet' : 'No pending packages! 🎉',
-            style: TextStyle(fontSize: 16, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
+            style: TextStyle(fontSize: 16, color: AppColors.textTertiary, fontWeight: FontWeight.w500)),
         ]),
       );
     }
@@ -121,13 +122,13 @@ class _PackagesScreenState extends State<PackagesScreen> with SingleTickerProvid
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => Padding(
+      builder: (ctx) => Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.cardBorder, borderRadius: BorderRadius.circular(2)))),
             const SizedBox(height: 20),
             Row(children: [
               Container(
@@ -141,7 +142,7 @@ class _PackagesScreenState extends State<PackagesScreen> with SingleTickerProvid
               const SizedBox(width: 16),
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(p.courierName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                Text(p.type, style: TextStyle(color: Colors.grey.shade600)),
+                Text(p.type, style: TextStyle(color: AppColors.textSecondary)),
               ])),
             ]),
             const SizedBox(height: 20),
@@ -163,9 +164,9 @@ class _PackagesScreenState extends State<PackagesScreen> with SingleTickerProvid
                         'collectedAt': Timestamp.fromDate(DateTime.now()),
                       });
                     }
-                    if (!context.mounted) return;
-                    Navigator.pop(context);
-                    showSnack(context, '✅ Package collected!');
+                    if (!ctx.mounted) return;
+                    Navigator.pop(ctx);
+                    showSnack(ctx, '✅ Package collected!');
                   },
                   icon: const Icon(Icons.check),
                   label: const Text('Mark as Collected'),
@@ -185,8 +186,8 @@ class _PackagesScreenState extends State<PackagesScreen> with SingleTickerProvid
     if (n.contains('swiggy')) return const Color(0xFFFC8019);
     if (n.contains('zomato')) return const Color(0xFFE23744);
     if (n.contains('delhivery')) return const Color(0xFFD40511);
-    if (n.contains('bluedart')) return Colors.blue.shade800;
-    return Colors.grey.shade700;
+    if (n.contains('bluedart')) return AppColors.primaryAmber;
+    return AppColors.textPrimary;
   }
 
   IconData _courierIcon(String name) {
@@ -231,12 +232,12 @@ class _PackageCard extends StatelessWidget {
               Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(p.courierName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                 const SizedBox(height: 2),
-                Text('AWB: ${p.awbNumber}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                Text('AWB: ${p.awbNumber}', style: TextStyle(fontSize: 12, color: AppColors.textTertiary)),
               ])),
               Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
-                Text(p.type, style: TextStyle(fontSize: 12, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+                Text(p.type, style: TextStyle(fontSize: 12, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
                 const SizedBox(height: 4),
-                Text(timeAgo(p.receivedAt), style: TextStyle(fontSize: 11, color: Colors.grey.shade400)),
+                Text(timeAgo(p.receivedAt), style: TextStyle(fontSize: 11, color: AppColors.textTertiary)),
               ]),
             ]),
             if (onCollect != null) ...[
@@ -247,16 +248,16 @@ class _PackageCard extends StatelessWidget {
                   onPressed: onCollect,
                   icon: const Icon(Icons.check, size: 18),
                   label: const Text('Mark as Collected'),
-                  style: FilledButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(vertical: 10)),
+                  style: FilledButton.styleFrom(backgroundColor: AppColors.statusSuccess, padding: const EdgeInsets.symmetric(vertical: 10)),
                 ),
               ),
             ],
             if (p.isCollected && p.collectedAt != null) ...[
               const SizedBox(height: 8),
               Row(children: [
-                Icon(Icons.check_circle, size: 14, color: Colors.green.shade400),
+                Icon(Icons.check_circle, size: 14, color: AppColors.statusSuccess),
                 const SizedBox(width: 4),
-                Text('Collected ${timeAgo(p.collectedAt!)}', style: TextStyle(fontSize: 12, color: Colors.green.shade600)),
+                Text('Collected ${timeAgo(p.collectedAt!)}', style: TextStyle(fontSize: 12, color: AppColors.statusSuccess)),
               ]),
             ],
           ]),
@@ -272,8 +273,8 @@ class _PackageCard extends StatelessWidget {
     if (n.contains('swiggy')) return const Color(0xFFFC8019);
     if (n.contains('zomato')) return const Color(0xFFE23744);
     if (n.contains('delhivery')) return const Color(0xFFD40511);
-    if (n.contains('bluedart')) return Colors.blue.shade800;
-    return Colors.grey.shade700;
+    if (n.contains('bluedart')) return AppColors.primaryAmber;
+    return AppColors.textPrimary;
   }
 
   IconData _courierIcon(String name) {
@@ -294,9 +295,9 @@ class _DetailRow extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 6),
     child: Row(children: [
-      Icon(icon, size: 18, color: Colors.grey.shade500),
+      Icon(icon, size: 18, color: AppColors.textTertiary),
       const SizedBox(width: 12),
-      SizedBox(width: 80, child: Text(label, style: TextStyle(fontSize: 13, color: Colors.grey.shade500))),
+      SizedBox(width: 80, child: Text(label, style: TextStyle(fontSize: 13, color: AppColors.textTertiary))),
       Expanded(child: Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
     ]),
   );

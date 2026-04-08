@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
+import '../../utils/app_colors.dart';
 
 class DocumentsScreen extends StatefulWidget {
   const DocumentsScreen({super.key});
@@ -46,11 +47,11 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                     children: [
                       const Text('My Documents / दस्तावेज', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                       const SizedBox(height: 4),
-                      Text('Flat: ${PrefsService.userFlat} • Securely stored', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                      Text('Flat: ${PrefsService.userFlat} • Securely stored', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                     ],
                   ),
                 ),
-                const Icon(Icons.lock, color: Colors.green),
+                const Icon(Icons.lock, color: AppColors.statusSuccess),
               ],
             ),
           ),
@@ -104,9 +105,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
 
                 if (filtered.isEmpty) {
                   return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.folder_open, size: 64, color: Colors.grey.shade300),
+                    Icon(Icons.folder_open, size: 64, color: AppColors.cardBorder),
                     const SizedBox(height: 12),
-                    Text('No documents in this category', style: TextStyle(color: Colors.grey.shade500)),
+                    Text('No documents in this category', style: TextStyle(color: AppColors.textTertiary)),
                   ]));
                 }
 
@@ -132,7 +133,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                             const PopupMenuItem(value: 'view', child: ListTile(leading: Icon(Icons.visibility), title: Text('View'), dense: true)),
                             const PopupMenuItem(value: 'share', child: ListTile(leading: Icon(Icons.share), title: Text('Share'), dense: true)),
                             const PopupMenuItem(value: 'download', child: ListTile(leading: Icon(Icons.download), title: Text('Download'), dense: true)),
-                            const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: Colors.red), title: Text('Delete', style: TextStyle(color: Colors.red)), dense: true)),
+                            const PopupMenuItem(value: 'delete', child: ListTile(leading: Icon(Icons.delete, color: AppColors.statusError), title: Text('Delete', style: TextStyle(color: AppColors.statusError)), dense: true)),
                           ],
                           onSelected: (v) {
                             switch (v) {
@@ -184,7 +185,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             if (d.expiryDate != null) _detailRow('Expiry / समाप्ति', formatDate(d.expiryDate!)),
             if (d.notes != null) ...[
               const SizedBox(height: 8),
-              Text('Notes / टिप्पणी', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+              Text('Notes / टिप्पणी', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
               Text(d.notes!, style: const TextStyle(fontSize: 14)),
             ],
             const SizedBox(height: 16),
@@ -204,7 +205,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 3),
       child: Row(children: [
-        SizedBox(width: 120, child: Text(label, style: TextStyle(fontSize: 13, color: Colors.grey.shade600))),
+        SizedBox(width: 120, child: Text(label, style: TextStyle(fontSize: 13, color: AppColors.textSecondary))),
         Expanded(child: Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500))),
       ]),
     );
@@ -229,7 +230,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Document Name / नाम', prefixIcon: Icon(Icons.description))),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
-              value: category,
+              initialValue: category,
               decoration: const InputDecoration(labelText: 'Category / श्रेणी', prefixIcon: Icon(Icons.category)),
               items: _categories.where((c) => c != 'All').map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
               onChanged: (v) => category = v ?? category,
@@ -238,15 +239,15 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
             Container(
               width: double.infinity, height: 100,
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
+                border: Border.all(color: AppColors.cardBorder),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.cloud_upload, size: 36, color: Colors.grey.shade400),
+                  Icon(Icons.cloud_upload, size: 36, color: AppColors.textTertiary),
                   const SizedBox(height: 4),
-                  Text('Tap to select file\nफ़ाइल चुनें', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade500, fontSize: 13)),
+                  Text('Tap to select file\nफ़ाइल चुनें', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textTertiary, fontSize: 13)),
                 ],
               ),
             ),
@@ -266,9 +267,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                     'uploadDate': Timestamp.fromDate(DateTime.now()),
                     'flat': PrefsService.userFlat,
                   });
-                  if (!context.mounted) return;
+                  if (!ctx.mounted) return;
                   Navigator.pop(ctx);
-                  showSnack(context, '✅ ${nameCtrl.text} uploaded!');
+                  showSnack(ctx, '✅ ${nameCtrl.text} uploaded!');
                 },
                 icon: const Icon(Icons.upload),
                 label: const Text('Upload Document', style: TextStyle(fontSize: 16)),
@@ -307,13 +308,13 @@ class _Document {
 
   Color get color {
     switch (category) {
-      case 'Sale Deed': return Colors.blue;
-      case 'Rental Agreement': return Colors.purple;
-      case 'NOC': return Colors.green;
-      case 'Society': return Colors.orange;
-      case 'Tax': return Colors.red;
-      case 'Insurance': return Colors.teal;
-      default: return Colors.grey;
+      case 'Sale Deed': return AppColors.primaryAmber;
+      case 'Rental Agreement': return const Color(0xFF7C3AED);
+      case 'NOC': return AppColors.statusSuccess;
+      case 'Society': return AppColors.primaryOrange;
+      case 'Tax': return AppColors.statusError;
+      case 'Insurance': return AppColors.primaryAmber;
+      default: return AppColors.textTertiary;
     }
   }
 }

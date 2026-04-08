@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../utils/mock_data.dart';
-import '../../services/firestore_service.dart';
 import '../../utils/helpers.dart';
+import '../../utils/app_colors.dart';
 
 class DirectoryScreen extends StatefulWidget {
   const DirectoryScreen({super.key});
@@ -66,9 +66,9 @@ class _DirectoryScreenState extends State<DirectoryScreen> with SingleTickerProv
               Expanded(
                 child: residents.isEmpty
                     ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(Icons.person_search_outlined, size: 64, color: Colors.grey.shade300),
+                        Icon(Icons.person_search_outlined, size: 64, color: AppColors.cardBorder),
                         const SizedBox(height: 8),
-                        Text('No residents found', style: TextStyle(color: Colors.grey.shade500)),
+                        Text('No residents found', style: TextStyle(color: AppColors.textTertiary)),
                       ]))
                     : RefreshIndicator(
                         onRefresh: () async => await Future.delayed(const Duration(seconds: 1)),
@@ -113,7 +113,7 @@ class _DirectoryScreenState extends State<DirectoryScreen> with SingleTickerProv
                                               ],
                                             ]),
                                             const SizedBox(height: 2),
-                                            Text(r.phone, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                                            Text(r.phone, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                                           ],
                                         )),
                                         // Flat number prominently
@@ -128,13 +128,13 @@ class _DirectoryScreenState extends State<DirectoryScreen> with SingleTickerProv
                                         const SizedBox(width: 8),
                                         // Quick action buttons
                                         IconButton(
-                                          icon: const Icon(Icons.phone, color: Colors.green, size: 20),
+                                          icon: const Icon(Icons.phone, color: AppColors.statusSuccess, size: 20),
                                           onPressed: () => showSnack(context, 'Calling ${r.name}...'),
                                           constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                                           padding: EdgeInsets.zero,
                                         ),
                                         IconButton(
-                                          icon: Icon(Icons.chat, color: Colors.green.shade700, size: 20),
+                                          icon: Icon(Icons.chat, color: AppColors.statusSuccess, size: 20),
                                           onPressed: () => showSnack(context, 'Opening WhatsApp for ${r.name}...'),
                                           constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                                           padding: EdgeInsets.zero,
@@ -171,12 +171,12 @@ class _DirectoryScreenState extends State<DirectoryScreen> with SingleTickerProv
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (e.rating > 0) ...[
-                          Icon(Icons.star, size: 16, color: Colors.amber.shade700),
+                          Icon(Icons.star, size: 16, color: AppColors.primaryAmber),
                           const SizedBox(width: 2),
                           Text(e.rating.toString(), style: const TextStyle(fontSize: 12)),
                           const SizedBox(width: 8),
                         ],
-                        IconButton(icon: const Icon(Icons.phone, color: Colors.green), onPressed: () => showSnack(context, 'Calling ${e.name}...')),
+                        IconButton(icon: const Icon(Icons.phone, color: AppColors.statusSuccess), onPressed: () => showSnack(context, 'Calling ${e.name}...')),
                       ],
                     ),
                   ),
@@ -205,15 +205,15 @@ class _DirectoryScreenState extends State<DirectoryScreen> with SingleTickerProv
 
   Color _emergencyColor(String cat) {
     switch (cat.toLowerCase()) {
-      case 'plumber': return Colors.blue;
-      case 'electrician': return Colors.orange;
-      case 'doctor (general)': return Colors.red;
-      case 'hospital': return Colors.red;
-      case 'carpenter': return Colors.brown;
-      case 'police': return Colors.indigo;
-      case 'fire': return Colors.deepOrange;
-      case 'ambulance': return Colors.red;
-      default: return Colors.grey;
+      case 'plumber': return AppColors.primaryAmber;
+      case 'electrician': return AppColors.primaryOrange;
+      case 'doctor (general)': return AppColors.statusError;
+      case 'hospital': return AppColors.statusError;
+      case 'carpenter': return const Color(0xFF78350F);
+      case 'police': return AppColors.primaryAmber;
+      case 'fire': return AppColors.primaryOrange;
+      case 'ambulance': return AppColors.statusError;
+      default: return AppColors.textTertiary;
     }
   }
 }

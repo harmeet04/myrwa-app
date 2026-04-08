@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../utils/mock_data.dart';
-import '../../services/firestore_service.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
+import '../../utils/app_colors.dart';
 
 class GateLogScreen extends StatefulWidget {
   const GateLogScreen({super.key});
@@ -68,16 +68,16 @@ class _GateLogScreenState extends State<GateLogScreen> {
                           children: [
                             CircleAvatar(
                               radius: 18,
-                              backgroundColor: e.exited ? Colors.grey.shade300 : Colors.green.shade100,
+                              backgroundColor: e.exited ? AppColors.cardBorder : AppColors.greenBg,
                               child: Icon(
                                 e.exited ? Icons.logout : Icons.login,
                                 size: 18,
-                                color: e.exited ? Colors.grey.shade600 : Colors.green,
+                                color: e.exited ? AppColors.textSecondary : AppColors.statusSuccess,
                               ),
                             ),
                             if (i < _filtered.length - 1) Container(
                               width: 2, height: 30,
-                              color: Colors.grey.shade300,
+                              color: AppColors.cardBorder,
                             ),
                           ],
                         ),
@@ -90,36 +90,36 @@ class _GateLogScreenState extends State<GateLogScreen> {
                               Container(
                                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                 decoration: BoxDecoration(
-                                  color: e.exited ? Colors.grey.shade100 : Colors.green.shade50,
+                                  color: e.exited ? AppColors.cardBorder : AppColors.greenBg,
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
                                   e.exited ? 'Exited' : 'Inside',
                                   style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold,
-                                    color: e.exited ? Colors.grey.shade600 : Colors.green.shade700),
+                                    color: e.exited ? AppColors.textSecondary : AppColors.statusSuccess),
                                 ),
                               ),
                             ]),
                             const SizedBox(height: 4),
                             Row(children: [
-                              Icon(Icons.home, size: 14, color: Colors.grey.shade600),
+                              Icon(Icons.home, size: 14, color: AppColors.textSecondary),
                               const SizedBox(width: 4),
-                              Text('Flat ${e.flatVisiting}', style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                              Text('Flat ${e.flatVisiting}', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
                               const SizedBox(width: 12),
-                              Icon(Icons.person, size: 14, color: Colors.grey.shade600),
+                              Icon(Icons.person, size: 14, color: AppColors.textSecondary),
                               const SizedBox(width: 4),
-                              Text('Approved: ${e.approvedBy}', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                              Text('Approved: ${e.approvedBy}', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                             ]),
                             const SizedBox(height: 4),
                             Row(children: [
-                              Icon(Icons.login, size: 14, color: Colors.green.shade400),
+                              Icon(Icons.login, size: 14, color: AppColors.statusSuccess),
                               const SizedBox(width: 4),
-                              Text('In: ${formatTime(e.timeIn)}', style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+                              Text('In: ${formatTime(e.timeIn)}', style: TextStyle(fontSize: 12, color: AppColors.textPrimary)),
                               if (e.timeOut != null) ...[
                                 const SizedBox(width: 12),
-                                Icon(Icons.logout, size: 14, color: Colors.red.shade300),
+                                Icon(Icons.logout, size: 14, color: AppColors.statusError),
                                 const SizedBox(width: 4),
-                                Text('Out: ${formatTime(e.timeOut!)}', style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
+                                Text('Out: ${formatTime(e.timeOut!)}', style: TextStyle(fontSize: 12, color: AppColors.textPrimary)),
                               ],
                             ]),
                             // Guard mark exit (mock)
@@ -136,7 +136,7 @@ class _GateLogScreenState extends State<GateLogScreen> {
                                   label: const Text('Mark Exit', style: TextStyle(fontSize: 12)),
                                   style: OutlinedButton.styleFrom(
                                     visualDensity: VisualDensity.compact,
-                                    foregroundColor: Colors.red,
+                                    foregroundColor: AppColors.statusError,
                                   ),
                                 ),
                               ),

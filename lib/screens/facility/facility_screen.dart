@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
+import '../../utils/app_colors.dart';
 import 'package:intl/intl.dart';
 
 class FacilityScreen extends StatefulWidget {
@@ -16,12 +17,12 @@ class _FacilityScreenState extends State<FacilityScreen> {
   DateTime _selectedDate = DateTime.now();
 
   final List<_Facility> _facilities = [
-    _Facility(name: 'Community Hall / सभागृह', icon: Icons.meeting_room, color: Colors.blue, capacity: 100, pricePerHour: 500, amenities: ['AC', 'Projector', 'Sound System', 'Stage']),
-    _Facility(name: 'Party Hall / पार्टी हॉल', icon: Icons.celebration, color: Colors.purple, capacity: 50, pricePerHour: 800, amenities: ['AC', 'Kitchen', 'DJ Setup', 'Decoration']),
-    _Facility(name: 'Tennis Court / टेनिस कोर्ट', icon: Icons.sports_tennis, color: Colors.green, capacity: 4, pricePerHour: 200, amenities: ['Floodlights', 'Net', 'Locker Room']),
-    _Facility(name: 'Swimming Pool / तरण ताल', icon: Icons.pool, color: Colors.cyan, capacity: 20, pricePerHour: 150, amenities: ['Changing Room', 'Lifeguard', 'Towels']),
-    _Facility(name: 'Guest Room / अतिथि कक्ष', icon: Icons.hotel, color: Colors.orange, capacity: 2, pricePerHour: 300, amenities: ['AC', 'TV', 'Attached Bath', 'WiFi'], isPerDay: true),
-    _Facility(name: 'Gym / जिम', icon: Icons.fitness_center, color: Colors.red, capacity: 15, pricePerHour: 0, amenities: ['Treadmill', 'Weights', 'Mirror Wall', 'AC']),
+    _Facility(name: 'Community Hall / सभागृह', icon: Icons.meeting_room, color: AppColors.primaryAmber, capacity: 100, pricePerHour: 500, amenities: ['AC', 'Projector', 'Sound System', 'Stage']),
+    _Facility(name: 'Party Hall / पार्टी हॉल', icon: Icons.celebration, color: const Color(0xFF7C3AED), capacity: 50, pricePerHour: 800, amenities: ['AC', 'Kitchen', 'DJ Setup', 'Decoration']),
+    _Facility(name: 'Tennis Court / टेनिस कोर्ट', icon: Icons.sports_tennis, color: AppColors.statusSuccess, capacity: 4, pricePerHour: 200, amenities: ['Floodlights', 'Net', 'Locker Room']),
+    _Facility(name: 'Swimming Pool / तरण ताल', icon: Icons.pool, color: AppColors.primaryAmber, capacity: 20, pricePerHour: 150, amenities: ['Changing Room', 'Lifeguard', 'Towels']),
+    _Facility(name: 'Guest Room / अतिथि कक्ष', icon: Icons.hotel, color: AppColors.primaryOrange, capacity: 2, pricePerHour: 300, amenities: ['AC', 'TV', 'Attached Bath', 'WiFi'], isPerDay: true),
+    _Facility(name: 'Gym / जिम', icon: Icons.fitness_center, color: AppColors.statusError, capacity: 15, pricePerHour: 0, amenities: ['Treadmill', 'Weights', 'Mirror Wall', 'AC']),
   ];
 
   // Track booked slots from Firestore
@@ -81,13 +82,13 @@ class _FacilityScreenState extends State<FacilityScreen> {
                       decoration: BoxDecoration(
                         color: selected ? Theme.of(context).colorScheme.primary : Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: selected ? Colors.transparent : Colors.grey.shade300),
+                        border: Border.all(color: selected ? Colors.transparent : AppColors.cardBorder),
                       ),
                       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-                        Text(DateFormat('EEE').format(date), style: TextStyle(fontSize: 11, color: selected ? Colors.white : Colors.grey.shade600)),
+                        Text(DateFormat('EEE').format(date), style: TextStyle(fontSize: 11, color: selected ? Colors.white : AppColors.textSecondary)),
                         const SizedBox(height: 4),
                         Text('${date.day}', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: selected ? Colors.white : Colors.black)),
-                        Text(DateFormat('MMM').format(date), style: TextStyle(fontSize: 10, color: selected ? Colors.white70 : Colors.grey.shade500)),
+                        Text(DateFormat('MMM').format(date), style: TextStyle(fontSize: 10, color: selected ? Colors.white70 : AppColors.textTertiary)),
                       ]),
                     ),
                   );
@@ -125,7 +126,7 @@ class _FacilityScreenState extends State<FacilityScreen> {
                           Text(f.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                           const SizedBox(height: 4),
                           Text('Capacity: ${f.capacity} • ${f.pricePerHour == 0 ? "Free / मुफ्त" : "₹${f.pricePerHour}/${f.isPerDay ? "day" : "hr"}"}',
-                            style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
+                            style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
                         ])),
                         _availabilityBadge(f, booked),
                       ]),
@@ -147,7 +148,7 @@ class _FacilityScreenState extends State<FacilityScreen> {
                               child: ChoiceChip(
                                 label: Text(slot, style: TextStyle(fontSize: 11, color: isBooked ? Colors.white : null)),
                                 selected: isBooked,
-                                selectedColor: Colors.red.shade300,
+                                selectedColor: AppColors.statusError.withValues(alpha: 0.7),
                                 onSelected: isBooked ? null : (_) => _bookSlot(f, slot),
                               ),
                             );
@@ -172,7 +173,7 @@ class _FacilityScreenState extends State<FacilityScreen> {
 
   Widget _availabilityBadge(_Facility f, Set<String> booked) {
     final available = f.timeSlots.length - booked.length;
-    final color = available > 3 ? Colors.green : (available > 0 ? Colors.orange : Colors.red);
+    final color = available > 3 ? AppColors.statusSuccess : (available > 0 ? AppColors.statusWarning : AppColors.statusError);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(color: color.withValues(alpha: 0.15), borderRadius: BorderRadius.circular(8)),
@@ -184,11 +185,11 @@ class _FacilityScreenState extends State<FacilityScreen> {
   void _bookSlot(_Facility f, String slot) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: Text('Book ${f.name.split('/')[0].trim()}'),
         content: Text('Date: ${formatDate(_selectedDate)}\nSlot: $slot\nPrice: ${f.pricePerHour == 0 ? "Free" : "₹${f.pricePerHour}"}\n\nConfirm booking?'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           FilledButton(
             onPressed: () async {
               await FirestoreService.addDoc('facility_bookings', {
@@ -199,9 +200,9 @@ class _FacilityScreenState extends State<FacilityScreen> {
                 'bookedBy': PrefsService.userName,
                 'flat': PrefsService.userFlat,
               });
-              if (!context.mounted) return;
-              Navigator.pop(context);
-              showSnack(context, '✅ ${f.name.split("/")[0].trim()} booked for $slot!');
+              if (!ctx.mounted) return;
+              Navigator.pop(ctx);
+              showSnack(ctx, '✅ ${f.name.split("/")[0].trim()} booked for $slot!');
             },
             child: const Text('Confirm / पक्का'),
           ),

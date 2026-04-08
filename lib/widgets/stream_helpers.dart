@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../utils/app_colors.dart';
 
 /// A reusable widget that handles Firestore stream loading/error/empty states
 class FirestoreStreamBuilder<T> extends StatelessWidget {
@@ -30,11 +31,11 @@ class FirestoreStreamBuilder<T> extends StatelessWidget {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.error_outline, size: 48, color: Colors.red.shade300),
+                  Icon(Icons.error_outline, size: 48, color: AppColors.statusError),
                   const SizedBox(height: 12),
-                  Text('Something went wrong', style: TextStyle(color: Colors.grey.shade600)),
+                  Text('Something went wrong', style: TextStyle(color: AppColors.textSecondary)),
                   const SizedBox(height: 4),
-                  Text(snapshot.error.toString(), style: TextStyle(fontSize: 12, color: Colors.grey.shade400), textAlign: TextAlign.center),
+                  Text(snapshot.error.toString(), style: TextStyle(fontSize: 12, color: AppColors.textTertiary), textAlign: TextAlign.center),
                 ],
               ),
             ),
@@ -51,9 +52,9 @@ class FirestoreStreamBuilder<T> extends StatelessWidget {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(emptyIcon, size: 64, color: Colors.grey.shade300),
+                Icon(emptyIcon, size: 64, color: AppColors.cardBorder),
                 const SizedBox(height: 12),
-                Text(emptyMessage, style: TextStyle(fontSize: 15, color: Colors.grey.shade500), textAlign: TextAlign.center),
+                Text(emptyMessage, style: TextStyle(fontSize: 15, color: AppColors.textTertiary), textAlign: TextAlign.center),
               ],
             ),
           );

@@ -4,6 +4,7 @@ import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
 import '../../services/auth_service.dart';
+import '../../utils/app_colors.dart';
 
 class VotingScreen extends StatefulWidget {
   const VotingScreen({super.key});
@@ -96,10 +97,10 @@ class _VotingScreenState extends State<VotingScreen> with SingleTickerProviderSt
   Widget _buildList(List<_Election> list, bool isActive) {
     if (list.isEmpty) {
       return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-        Icon(Icons.how_to_vote_outlined, size: 72, color: Colors.grey.shade300),
+        Icon(Icons.how_to_vote_outlined, size: 72, color: AppColors.cardBorder),
         const SizedBox(height: 12),
         Text(isActive ? 'No active elections\nकोई चालू चुनाव नहीं' : 'No completed elections',
-          textAlign: TextAlign.center, style: TextStyle(color: Colors.grey.shade500)),
+          textAlign: TextAlign.center, style: TextStyle(color: AppColors.textTertiary)),
       ]));
     }
     return ListView.builder(
@@ -113,28 +114,28 @@ class _VotingScreenState extends State<VotingScreen> with SingleTickerProviderSt
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Row(children: [
                 CircleAvatar(
-                  backgroundColor: e.isActive ? Colors.blue.shade100 : Colors.green.shade100,
-                  child: Icon(e.type == 'election' ? Icons.how_to_vote : Icons.poll, color: e.isActive ? Colors.blue : Colors.green)),
+                  backgroundColor: e.isActive ? AppColors.amberBg : AppColors.greenBg,
+                  child: Icon(e.type == 'election' ? Icons.how_to_vote : Icons.poll, color: e.isActive ? AppColors.primaryAmber : AppColors.statusSuccess)),
                 const SizedBox(width: 12),
                 Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                   Text(e.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                   Text('${e.type == "election" ? "🗳️ Election" : "📊 Budget Vote"} • ${e.isAnonymous ? "Anonymous" : "Public"}',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                 ])),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: e.isActive ? Colors.blue.shade100 : Colors.green.shade100,
+                    color: e.isActive ? AppColors.amberBg : AppColors.greenBg,
                     borderRadius: BorderRadius.circular(8)),
                   child: Text(e.isActive ? 'LIVE' : 'DONE',
-                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: e.isActive ? Colors.blue : Colors.green)),
+                    style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: e.isActive ? AppColors.primaryAmber : AppColors.statusSuccess)),
                 ),
               ]),
               const SizedBox(height: 8),
-              Text(e.description, style: TextStyle(fontSize: 13, color: Colors.grey.shade700)),
+              Text(e.description, style: TextStyle(fontSize: 13, color: AppColors.textPrimary)),
               const SizedBox(height: 4),
               Text('Ends: ${formatDate(e.endDate)} • Voted: ${e.totalVoted}/${e.totalEligible}',
-                style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                style: TextStyle(fontSize: 12, color: AppColors.textTertiary)),
               const SizedBox(height: 12),
               ...e.candidates.asMap().entries.map((entry) {
                 final idx = entry.key;
@@ -151,8 +152,8 @@ class _VotingScreenState extends State<VotingScreen> with SingleTickerProviderSt
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: isWinner ? Colors.green : (e.votedIndex == idx ? Colors.blue : Colors.grey.shade300)),
-                        color: isWinner ? Colors.green.shade50 : (e.votedIndex == idx ? Colors.blue.shade50 : null)),
+                        border: Border.all(color: isWinner ? AppColors.statusSuccess : (e.votedIndex == idx ? AppColors.primaryAmber : AppColors.cardBorder)),
+                        color: isWinner ? AppColors.greenBg : (e.votedIndex == idx ? AppColors.amberBg : null)),
                       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                         Row(children: [
                           CircleAvatar(
@@ -163,11 +164,11 @@ class _VotingScreenState extends State<VotingScreen> with SingleTickerProviderSt
                           Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                             Row(children: [
                               Expanded(child: Text(c.name, style: const TextStyle(fontWeight: FontWeight.w600))),
-                              if (isWinner) const Text('🏆 Winner', style: TextStyle(fontSize: 12, color: Colors.green, fontWeight: FontWeight.bold)),
-                              if (e.votedIndex == idx) const Text('✓ Your vote', style: TextStyle(fontSize: 11, color: Colors.blue)),
+                              if (isWinner) const Text('🏆 Winner', style: TextStyle(fontSize: 12, color: AppColors.statusSuccess, fontWeight: FontWeight.bold)),
+                              if (e.votedIndex == idx) const Text('✓ Your vote', style: TextStyle(fontSize: 11, color: AppColors.primaryAmber)),
                             ]),
                             if (c.subtitle != null)
-                              Text(c.subtitle!, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                              Text(c.subtitle!, style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                           ])),
                           if (!e.isActive || e.hasVoted)
                             Text('${c.votes} (${percentage.toStringAsFixed(0)}%)', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
@@ -178,8 +179,8 @@ class _VotingScreenState extends State<VotingScreen> with SingleTickerProviderSt
                             borderRadius: BorderRadius.circular(4),
                             child: LinearProgressIndicator(
                               value: e.totalVoted > 0 ? c.votes / e.totalVoted : 0,
-                              backgroundColor: Colors.grey.shade200,
-                              valueColor: AlwaysStoppedAnimation(isWinner ? Colors.green : Colors.blue.shade300),
+                              backgroundColor: AppColors.cardBorder,
+                              valueColor: AlwaysStoppedAnimation(isWinner ? AppColors.statusSuccess : AppColors.primaryAmber),
                               minHeight: 6)),
                         ],
                       ]),
@@ -191,7 +192,7 @@ class _VotingScreenState extends State<VotingScreen> with SingleTickerProviderSt
                 Padding(
                   padding: const EdgeInsets.only(top: 8),
                   child: Text('👆 Tap a candidate to vote / वोट देने के लिए टैप करें',
-                    style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontStyle: FontStyle.italic)),
+                    style: TextStyle(fontSize: 12, color: AppColors.textTertiary, fontStyle: FontStyle.italic)),
                 ),
             ]),
           ),
@@ -203,11 +204,11 @@ class _VotingScreenState extends State<VotingScreen> with SingleTickerProviderSt
   void _castVote(_Election election, int candidateIdx) {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (ctx) => AlertDialog(
         title: const Text('Confirm Vote / वोट पक्का करें'),
         content: Text('You are voting for:\n\n${election.candidates[candidateIdx].name}\n\nThis action cannot be undone.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
           FilledButton(
             onPressed: () async {
               if (election.id != null) {
@@ -227,9 +228,9 @@ class _VotingScreenState extends State<VotingScreen> with SingleTickerProviderSt
                   'votedIndex_$uid': candidateIdx,
                 });
               }
-              if (!context.mounted) return;
-              Navigator.pop(context);
-              showSnack(context, '✅ Vote cast successfully! धन्यवाद!');
+              if (!ctx.mounted) return;
+              Navigator.pop(ctx);
+              showSnack(ctx, '✅ Vote cast successfully! धन्यवाद!');
             },
             child: const Text('Vote / वोट दें'),
           ),

@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
+import '../../utils/app_colors.dart';
 
 class StaffScreen extends StatefulWidget {
   const StaffScreen({super.key});
@@ -51,9 +52,9 @@ class _StaffScreenState extends State<StaffScreen> {
 
           if (staffList.isEmpty) {
             return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.people_outline, size: 72, color: Colors.grey.shade300),
+              Icon(Icons.people_outline, size: 72, color: AppColors.cardBorder),
               const SizedBox(height: 12),
-              Text('No staff registered yet', style: TextStyle(color: Colors.grey.shade500)),
+              Text('No staff registered yet', style: TextStyle(color: AppColors.textTertiary)),
             ]));
           }
 
@@ -78,37 +79,37 @@ class _StaffScreenState extends State<StaffScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: s.isPresent ? Colors.green.shade100 : Colors.red.shade100,
+                                color: s.isPresent ? AppColors.greenBg : AppColors.redBg,
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               child: Text(s.isPresent ? '✅ Present' : '❌ Absent',
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: s.isPresent ? Colors.green.shade800 : Colors.red.shade800)),
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: s.isPresent ? AppColors.statusSuccess : AppColors.statusError)),
                             ),
                           ]),
                           const SizedBox(height: 4),
-                          Text('${s.role} • ID: ${s.staffId}', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
-                          Text('📱 ${s.phone} • 🏠 Serves: ${s.servesFlats}', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                          Text('${s.role} • ID: ${s.staffId}', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                          Text('📱 ${s.phone} • 🏠 Serves: ${s.servesFlats}', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                         ])),
                       ]),
                       const SizedBox(height: 12),
                       Row(children: [
-                        Text('This week: ', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                        Text('This week: ', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                         ...s.weekAttendance.map((present) => Container(
                           width: 28, height: 28,
                           margin: const EdgeInsets.only(right: 4),
                           decoration: BoxDecoration(
-                            color: present ? Colors.green.shade100 : Colors.red.shade100,
+                            color: present ? AppColors.greenBg : AppColors.redBg,
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: Center(child: Text(present ? 'P' : 'A',
-                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: present ? Colors.green.shade800 : Colors.red.shade800))),
+                            style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: present ? AppColors.statusSuccess : AppColors.statusError))),
                         )),
                         const Spacer(),
                         Text('${s.weekAttendance.where((a) => a).length}/7 days', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
                       ]),
                       const SizedBox(height: 8),
                       if (s.lastEntry != null)
-                        Text('Last entry: ${formatDateTime(s.lastEntry!)}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                        Text('Last entry: ${formatDateTime(s.lastEntry!)}', style: TextStyle(fontSize: 12, color: AppColors.textTertiary)),
                       const SizedBox(height: 8),
                       Row(children: [
                         Expanded(child: OutlinedButton.icon(
@@ -117,7 +118,8 @@ class _StaffScreenState extends State<StaffScreen> {
                             if (s.id != null) {
                               await FirestoreService.updateDoc('staff', s.id!, {'isPresent': newPresent});
                             }
-                            if (mounted) showSnack(context, newPresent ? '${s.name} marked present ✓' : '${s.name} marked absent');
+                            if (!context.mounted) return;
+                            showSnack(context, newPresent ? '${s.name} marked present ✓' : '${s.name} marked absent');
                           },
                           icon: Icon(s.isPresent ? Icons.close : Icons.check, size: 18),
                           label: Text(s.isPresent ? 'Mark Absent' : 'Mark Present'),
@@ -163,7 +165,7 @@ class _StaffScreenState extends State<StaffScreen> {
             CircleAvatar(radius: 40, backgroundColor: s.color.withValues(alpha: 0.15), child: Icon(s.icon, size: 40, color: s.color)),
             const SizedBox(height: 12),
             Text(s.name, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            Text(s.role, style: TextStyle(fontSize: 14, color: Colors.grey.shade600)),
+            Text(s.role, style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
             const SizedBox(height: 12),
             _idRow('Staff ID', s.staffId),
             _idRow('Phone', s.phone),
@@ -185,7 +187,7 @@ class _StaffScreenState extends State<StaffScreen> {
   Widget _idRow(String label, String value) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 2),
     child: Row(children: [
-      SizedBox(width: 80, child: Text(label, style: TextStyle(fontSize: 12, color: Colors.grey.shade600))),
+      SizedBox(width: 80, child: Text(label, style: TextStyle(fontSize: 12, color: AppColors.textSecondary))),
       Expanded(child: Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500))),
     ]),
   );
@@ -209,7 +211,7 @@ class _StaffScreenState extends State<StaffScreen> {
           TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Phone / फोन', prefixIcon: Icon(Icons.phone)), keyboardType: TextInputType.phone),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: role,
+            initialValue: role,
             decoration: const InputDecoration(labelText: 'Role / भूमिका', prefixIcon: Icon(Icons.work)),
             items: ['Maid', 'Driver', 'Cook', 'Watchman', 'Gardener', 'Sweeper'].map((r) => DropdownMenuItem(value: r, child: Text(r))).toList(),
             onChanged: (v) => role = v ?? role,
@@ -229,9 +231,9 @@ class _StaffScreenState extends State<StaffScreen> {
                 'weekAttendance': [true, true, true, false, true, true, false],
                 'isPresent': true,
               });
-              if (!context.mounted) return;
+              if (!ctx.mounted) return;
               Navigator.pop(ctx);
-              showSnack(context, '${nameCtrl.text} added as $role ✓');
+              showSnack(ctx, '${nameCtrl.text} added as $role ✓');
             },
             icon: const Icon(Icons.add),
             label: const Text('Add Staff', style: TextStyle(fontSize: 16)),
@@ -273,13 +275,13 @@ class _Staff {
 
   Color get color {
     switch (role) {
-      case 'Maid': return Colors.purple;
-      case 'Driver': return Colors.blue;
-      case 'Cook': return Colors.orange;
-      case 'Watchman': return Colors.teal;
-      case 'Gardener': return Colors.green;
-      case 'Sweeper': return Colors.brown;
-      default: return Colors.grey;
+      case 'Maid': return const Color(0xFF7C3AED);
+      case 'Driver': return AppColors.primaryAmber;
+      case 'Cook': return AppColors.primaryOrange;
+      case 'Watchman': return AppColors.statusSuccess;
+      case 'Gardener': return AppColors.statusSuccess;
+      case 'Sweeper': return const Color(0xFF78350F);
+      default: return AppColors.textTertiary;
     }
   }
 }

@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
+import '../../utils/app_colors.dart';
 
 class VehicleScreen extends StatefulWidget {
   const VehicleScreen({super.key});
@@ -83,9 +84,9 @@ class _VehicleScreenState extends State<VehicleScreen> with SingleTickerProvider
 
         if (vehicles.isEmpty) {
           return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.directions_car_outlined, size: 72, color: Colors.grey.shade300),
+            Icon(Icons.directions_car_outlined, size: 72, color: AppColors.cardBorder),
             const SizedBox(height: 12),
-            Text('No vehicles registered', style: TextStyle(color: Colors.grey.shade500)),
+            Text('No vehicles registered', style: TextStyle(color: AppColors.textTertiary)),
           ]));
         }
 
@@ -109,21 +110,21 @@ class _VehicleScreenState extends State<VehicleScreen> with SingleTickerProvider
                     const SizedBox(height: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(color: Colors.amber.shade100, borderRadius: BorderRadius.circular(6), border: Border.all(color: Colors.amber.shade400)),
-                      child: Text(v.number, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Colors.grey.shade800)),
+                      decoration: BoxDecoration(color: AppColors.amberBg, borderRadius: BorderRadius.circular(6), border: Border.all(color: AppColors.amberBorder)),
+                      child: Text(v.number, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: AppColors.textPrimary)),
                     ),
                     const SizedBox(height: 4),
-                    Text('Slot: ${v.parkingSlot} • ${v.type}', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                    Text('Slot: ${v.parkingSlot} • ${v.type}', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                   ])),
                   Column(children: [
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
-                        color: v.isInside ? Colors.green.shade100 : Colors.grey.shade200,
+                        color: v.isInside ? AppColors.greenBg : AppColors.cardBorder,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Text(v.isInside ? '🟢 Inside' : '⚪ Outside',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: v.isInside ? Colors.green.shade800 : Colors.grey.shade700)),
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: v.isInside ? AppColors.statusSuccess : AppColors.textPrimary)),
                     ),
                     const SizedBox(height: 8),
                     IconButton(
@@ -131,7 +132,8 @@ class _VehicleScreenState extends State<VehicleScreen> with SingleTickerProvider
                         if (v.id != null) {
                           await FirestoreService.updateDoc('vehicles', v.id!, {'isInside': !v.isInside});
                         }
-                        if (mounted) showSnack(context, !v.isInside ? '${v.number} marked as entered' : '${v.number} marked as exited');
+                        if (!context.mounted) return;
+                        showSnack(context, !v.isInside ? '${v.number} marked as entered' : '${v.number} marked as exited');
                       },
                       icon: Icon(v.isInside ? Icons.logout : Icons.login, color: Theme.of(context).colorScheme.primary),
                     ),
@@ -163,11 +165,11 @@ class _VehicleScreenState extends State<VehicleScreen> with SingleTickerProvider
           padding: const EdgeInsets.all(16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             Row(children: [
-              _legend(Colors.green.shade100, 'Available / खाली'),
+              _legend(AppColors.greenBg, 'Available / खाली'),
               const SizedBox(width: 16),
-              _legend(Colors.red.shade100, 'Occupied / भरा'),
+              _legend(AppColors.redBg, 'Occupied / भरा'),
               const SizedBox(width: 16),
-              _legend(Colors.amber.shade100, 'Reserved'),
+              _legend(AppColors.amberBg, 'Reserved'),
             ]),
             const SizedBox(height: 16),
             Expanded(
@@ -181,13 +183,13 @@ class _VehicleScreenState extends State<VehicleScreen> with SingleTickerProvider
                     borderRadius: BorderRadius.circular(8),
                     child: Container(
                       decoration: BoxDecoration(
-                        color: s.status == 'available' ? Colors.green.shade50 : s.status == 'reserved' ? Colors.amber.shade50 : Colors.red.shade50,
+                        color: s.status == 'available' ? AppColors.greenBg : s.status == 'reserved' ? AppColors.amberBg : AppColors.redBg,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: s.status == 'available' ? Colors.green.shade300 : s.status == 'reserved' ? Colors.amber.shade300 : Colors.red.shade300),
+                        border: Border.all(color: s.status == 'available' ? AppColors.greenBorder : s.status == 'reserved' ? AppColors.amberBorder : AppColors.redBorder),
                       ),
                       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
                         Icon(s.status == 'available' ? Icons.check_circle_outline : Icons.directions_car, size: 24,
-                          color: s.status == 'available' ? Colors.green : s.status == 'reserved' ? Colors.amber.shade700 : Colors.red),
+                          color: s.status == 'available' ? AppColors.statusSuccess : s.status == 'reserved' ? AppColors.primaryAmber : AppColors.statusError),
                         const SizedBox(height: 4),
                         Text(s.id, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                         if (s.flat != null) Text(s.flat!, style: const TextStyle(fontSize: 10)),
@@ -228,7 +230,7 @@ class _VehicleScreenState extends State<VehicleScreen> with SingleTickerProvider
           TextField(controller: numberCtrl, decoration: const InputDecoration(labelText: 'Number Plate / नंबर प्लेट', prefixIcon: Icon(Icons.pin)), textCapitalization: TextCapitalization.characters),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
-            value: selectedType,
+            initialValue: selectedType,
             decoration: const InputDecoration(labelText: 'Vehicle Type', prefixIcon: Icon(Icons.category)),
             items: ['Car', 'Bike', 'Scooter', 'EV'].map((t) => DropdownMenuItem(value: t, child: Text(t))).toList(),
             onChanged: (v) => selectedType = v ?? 'Car',
@@ -244,9 +246,9 @@ class _VehicleScreenState extends State<VehicleScreen> with SingleTickerProvider
                 'parkingSlot': 'Unassigned',
                 'isInside': false,
               });
-              if (!context.mounted) return;
+              if (!ctx.mounted) return;
               Navigator.pop(ctx);
-              showSnack(context, 'Vehicle added successfully!');
+              showSnack(ctx, 'Vehicle added successfully!');
             },
             icon: const Icon(Icons.add),
             label: const Text('Register Vehicle', style: TextStyle(fontSize: 16)),
@@ -278,10 +280,10 @@ class _Vehicle {
 
   Color get color {
     switch (type) {
-      case 'Bike': return Colors.orange;
-      case 'Scooter': return Colors.purple;
-      case 'EV': return Colors.green;
-      default: return Colors.blue;
+      case 'Bike': return AppColors.primaryOrange;
+      case 'Scooter': return const Color(0xFF7C3AED);
+      case 'EV': return AppColors.statusSuccess;
+      default: return AppColors.primaryAmber;
     }
   }
 }

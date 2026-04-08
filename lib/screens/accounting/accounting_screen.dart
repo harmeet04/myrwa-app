@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
+import '../../utils/app_colors.dart';
 
 class AccountingScreen extends StatefulWidget {
   const AccountingScreen({super.key});
@@ -49,8 +50,8 @@ class _AccountingScreenState extends State<AccountingScreen> with SingleTickerPr
         controller: _tab,
         children: [
           _buildSummary(society),
-          _buildLedger(society, 'income', Colors.green),
-          _buildLedger(society, 'expense', Colors.red),
+          _buildLedger(society, 'income', AppColors.statusSuccess),
+          _buildLedger(society, 'expense', AppColors.statusError),
         ],
       ),
     );
@@ -78,7 +79,7 @@ class _AccountingScreenState extends State<AccountingScreen> with SingleTickerPr
           padding: const EdgeInsets.all(16),
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
             DropdownButtonFormField<String>(
-              value: _selectedMonth,
+              initialValue: _selectedMonth,
               decoration: const InputDecoration(labelText: 'Month / महीना', prefixIcon: Icon(Icons.calendar_month)),
               items: ['January 2026', 'February 2026', 'March 2026']
                   .map((m) => DropdownMenuItem(value: m, child: Text(m))).toList(),
@@ -86,15 +87,15 @@ class _AccountingScreenState extends State<AccountingScreen> with SingleTickerPr
             ),
             const SizedBox(height: 20),
             Row(children: [
-              Expanded(child: _SummaryCard(title: 'Total Income\nकुल आय', amount: totalIncome, icon: Icons.arrow_downward, color: Colors.green)),
+              Expanded(child: _SummaryCard(title: 'Total Income\nकुल आय', amount: totalIncome, icon: Icons.arrow_downward, color: AppColors.statusSuccess)),
               const SizedBox(width: 12),
-              Expanded(child: _SummaryCard(title: 'Total Expense\nकुल खर्च', amount: totalExpense, icon: Icons.arrow_upward, color: Colors.red)),
+              Expanded(child: _SummaryCard(title: 'Total Expense\nकुल खर्च', amount: totalExpense, icon: Icons.arrow_upward, color: AppColors.statusError)),
             ]),
             const SizedBox(height: 12),
             Row(children: [
-              Expanded(child: _SummaryCard(title: 'Net Surplus\nबचत', amount: netSurplus, icon: Icons.savings, color: Colors.blue)),
+              Expanded(child: _SummaryCard(title: 'Net Surplus\nबचत', amount: netSurplus, icon: Icons.savings, color: AppColors.primaryAmber)),
               const SizedBox(width: 12),
-              Expanded(child: _SummaryCard(title: 'Pending Dues\nबकाया', amount: pendingDues, icon: Icons.warning, color: Colors.orange)),
+              Expanded(child: _SummaryCard(title: 'Pending Dues\nबकाया', amount: pendingDues, icon: Icons.warning, color: AppColors.primaryOrange)),
             ]),
             const SizedBox(height: 24),
             Text('Collection Status / वसूली', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
@@ -157,9 +158,9 @@ class _AccountingScreenState extends State<AccountingScreen> with SingleTickerPr
 
         if (entries.isEmpty) {
           return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-            Icon(Icons.receipt_long_outlined, size: 72, color: Colors.grey.shade300),
+            Icon(Icons.receipt_long_outlined, size: 72, color: AppColors.cardBorder),
             const SizedBox(height: 12),
-            Text('No ${type} entries yet', style: TextStyle(color: Colors.grey.shade500)),
+            Text('No $type entries yet', style: TextStyle(color: AppColors.textTertiary)),
           ]));
         }
 
@@ -173,7 +174,7 @@ class _AccountingScreenState extends State<AccountingScreen> with SingleTickerPr
                 leading: CircleAvatar(backgroundColor: color.withValues(alpha: 0.15), child: Icon(e.icon, color: color)),
                 title: Text(e.description, style: const TextStyle(fontWeight: FontWeight.w500)),
                 subtitle: Text('${formatDate(e.date)} • ${e.category}'),
-                trailing: Text('${color == Colors.green ? '+' : '-'}${formatCurrency(e.amount)}',
+                trailing: Text('${color == AppColors.statusSuccess ? '+' : '-'}${formatCurrency(e.amount)}',
                   style: TextStyle(fontWeight: FontWeight.bold, color: color, fontSize: 14)),
               ),
             );
@@ -201,14 +202,14 @@ class _AccountingScreenState extends State<AccountingScreen> with SingleTickerPr
   }
 
   static const _expenseBreakdown = [
-    ('Security / सुरक्षा', '₹1,80,000', Colors.indigo, Icons.security),
-    ('Housekeeping / सफाई', '₹95,000', Colors.teal, Icons.cleaning_services),
-    ('Electricity / बिजली', '₹1,20,000', Colors.amber, Icons.bolt),
-    ('Water / पानी', '₹45,000', Colors.blue, Icons.water_drop),
-    ('Garden / बगीचा', '₹25,000', Colors.green, Icons.park),
-    ('Lift Maintenance', '₹40,000', Colors.purple, Icons.elevator),
-    ('Repairs / मरम्मत', '₹55,000', Colors.orange, Icons.build),
-    ('Admin & Misc', '₹25,000', Colors.grey, Icons.receipt),
+    ('Security / सुरक्षा', '₹1,80,000', AppColors.primaryAmber, Icons.security),
+    ('Housekeeping / सफाई', '₹95,000', AppColors.statusSuccess, Icons.cleaning_services),
+    ('Electricity / बिजली', '₹1,20,000', AppColors.statusWarning, Icons.bolt),
+    ('Water / पानी', '₹45,000', AppColors.primaryAmber, Icons.water_drop),
+    ('Garden / बगीचा', '₹25,000', AppColors.statusSuccess, Icons.park),
+    ('Lift Maintenance', '₹40,000', Color(0xFF7C3AED), Icons.elevator),
+    ('Repairs / मरम्मत', '₹55,000', AppColors.primaryOrange, Icons.build),
+    ('Admin & Misc', '₹25,000', AppColors.textTertiary, Icons.receipt),
   ];
 
   static final _incomeEntries = [
@@ -244,7 +245,7 @@ class _SummaryCard extends StatelessWidget {
         const SizedBox(height: 8),
         Text(amount, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
         const SizedBox(height: 4),
-        Text(title, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+        Text(title, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
       ]),
     ),
   );
@@ -257,7 +258,7 @@ class _CollectionBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = collected > 90 ? Colors.green : (collected > 75 ? Colors.orange : Colors.red);
+    final color = collected > 90 ? AppColors.statusSuccess : (collected > 75 ? AppColors.statusWarning : AppColors.statusError);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -268,7 +269,7 @@ class _CollectionBar extends StatelessWidget {
         const SizedBox(height: 4),
         ClipRRect(
           borderRadius: BorderRadius.circular(4),
-          child: LinearProgressIndicator(value: collected / 100, backgroundColor: Colors.grey.shade200,
+          child: LinearProgressIndicator(value: collected / 100, backgroundColor: AppColors.cardBorder,
             valueColor: AlwaysStoppedAnimation(color), minHeight: 8),
         ),
       ]),

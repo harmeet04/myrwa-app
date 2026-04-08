@@ -5,6 +5,7 @@ import '../../services/auth_service.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
 import '../../utils/mock_data.dart';
+import '../../utils/app_colors.dart';
 import 'chat_screen.dart';
 
 class ChatListScreen extends StatelessWidget {
@@ -31,11 +32,11 @@ class ChatListScreen extends StatelessWidget {
             return Center(child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.chat_outlined, size: 64, color: Colors.grey.shade300),
+                Icon(Icons.chat_outlined, size: 64, color: AppColors.cardBorder),
                 const SizedBox(height: 12),
-                Text('No messages yet', style: TextStyle(color: Colors.grey.shade500)),
+                Text('No messages yet', style: TextStyle(color: AppColors.textTertiary)),
                 const SizedBox(height: 8),
-                Text('Start a conversation!', style: TextStyle(color: Colors.grey.shade400, fontSize: 13)),
+                Text('Start a conversation!', style: TextStyle(color: AppColors.textTertiary, fontSize: 13)),
               ],
             ));
           }
@@ -60,10 +61,10 @@ class ChatListScreen extends StatelessWidget {
                 title: Row(children: [
                   Text(otherName, style: const TextStyle(fontWeight: FontWeight.w600)),
                   const SizedBox(width: 6),
-                  Text(otherFlat, style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                  Text(otherFlat, style: TextStyle(fontSize: 12, color: AppColors.textTertiary)),
                 ]),
                 subtitle: Text(lastMessage, maxLines: 1, overflow: TextOverflow.ellipsis),
-                trailing: Text(timeAgo(lastTime), style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+                trailing: Text(timeAgo(lastTime), style: TextStyle(fontSize: 11, color: AppColors.textTertiary)),
                 onTap: () => Navigator.of(context).push(MaterialPageRoute(
                   builder: (_) => ChatScreen(otherName: otherName, otherFlat: otherFlat, otherId: otherUid),
                 )),

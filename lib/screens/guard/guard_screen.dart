@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../models/models.dart' show VisitorStatus;
 import '../../utils/helpers.dart';
 import '../../utils/mock_data.dart';
-import '../../services/firestore_service.dart';
+import '../../utils/app_colors.dart';
 
 class GuardScreen extends StatefulWidget {
   const GuardScreen({super.key});
@@ -40,7 +40,7 @@ class _GuardScreenState extends State<GuardScreen> with SingleTickerProviderStat
             Text('Bahadur Singh • Main Gate', style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
           ],
         ),
-        backgroundColor: Colors.teal.shade700,
+        backgroundColor: AppColors.primaryOrange,
         bottom: TabBar(
           controller: _tab,
           indicatorColor: Colors.white,
@@ -89,7 +89,7 @@ class _GuardScreenState extends State<GuardScreen> with SingleTickerProviderStat
                   width: 200,
                   height: 200,
                   decoration: BoxDecoration(
-                    border: Border.all(color: Colors.teal, width: 3),
+                    border: Border.all(color: AppColors.primaryAmber, width: 3),
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
@@ -101,7 +101,7 @@ class _GuardScreenState extends State<GuardScreen> with SingleTickerProviderStat
                 ),
                 const Positioned(
                   top: 20,
-                  child: Icon(Icons.qr_code_scanner, color: Colors.teal, size: 32),
+                  child: Icon(Icons.qr_code_scanner, color: AppColors.primaryAmber, size: 32),
                 ),
               ],
             ),
@@ -114,7 +114,7 @@ class _GuardScreenState extends State<GuardScreen> with SingleTickerProviderStat
             height: 52,
             child: FilledButton.icon(
               onPressed: _simulateScan,
-              style: FilledButton.styleFrom(backgroundColor: Colors.teal),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.primaryAmber),
               icon: const Icon(Icons.qr_code_scanner),
               label: const Text('Simulate QR Scan', style: TextStyle(fontSize: 16)),
             ),
@@ -126,7 +126,7 @@ class _GuardScreenState extends State<GuardScreen> with SingleTickerProviderStat
             decoration: InputDecoration(
               labelText: 'Enter Code Manually / कोड डालें',
               prefixIcon: const Icon(Icons.pin),
-              suffixIcon: IconButton(icon: const Icon(Icons.check_circle, color: Colors.teal), onPressed: _simulateScan),
+              suffixIcon: IconButton(icon: const Icon(Icons.check_circle, color: AppColors.primaryAmber), onPressed: _simulateScan),
             ),
           ),
           const SizedBox(height: 24),
@@ -136,10 +136,10 @@ class _GuardScreenState extends State<GuardScreen> with SingleTickerProviderStat
           const SizedBox(height: 8),
           ...List.generate(3, (i) => Card(
             child: ListTile(
-              leading: CircleAvatar(backgroundColor: Colors.green.shade100, child: const Icon(Icons.check, color: Colors.green)),
+              leading: CircleAvatar(backgroundColor: AppColors.greenBg, child: const Icon(Icons.check, color: AppColors.statusSuccess)),
               title: Text(['Ramesh Kumar', 'Amazon Delivery', 'Dr. Anita'][i]),
               subtitle: Text(['Code: 482916 • A-101', 'Code: 731054 • B-102', 'Code: 295837 • A-201'][i]),
-              trailing: Text(['2 min ago', '15 min ago', '1 hr ago'][i], style: TextStyle(fontSize: 11, color: Colors.grey.shade500)),
+              trailing: Text(['2 min ago', '15 min ago', '1 hr ago'][i], style: TextStyle(fontSize: 11, color: AppColors.textTertiary)),
             ),
           )),
         ],
@@ -151,7 +151,7 @@ class _GuardScreenState extends State<GuardScreen> with SingleTickerProviderStat
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        icon: const Icon(Icons.check_circle, color: Colors.green, size: 48),
+        icon: const Icon(Icons.check_circle, color: AppColors.statusSuccess, size: 48),
         title: const Text('✅ QR Verified!'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -163,8 +163,8 @@ class _GuardScreenState extends State<GuardScreen> with SingleTickerProviderStat
             _scanRow('Host', 'Rajesh Sharma'),
             _scanRow('Valid Until', formatDate(DateTime.now())),
             const Divider(),
-            const Text('✅ Pass is valid. Allow entry.', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
-            const Text('पास मान्य है। प्रवेश दें।', style: TextStyle(color: Colors.green, fontSize: 13)),
+            const Text('✅ Pass is valid. Allow entry.', style: TextStyle(color: AppColors.statusSuccess, fontWeight: FontWeight.bold)),
+            const Text('पास मान्य है। प्रवेश दें।', style: TextStyle(color: AppColors.statusSuccess, fontSize: 13)),
           ],
         ),
         actions: [
@@ -189,7 +189,7 @@ class _GuardScreenState extends State<GuardScreen> with SingleTickerProviderStat
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
         children: [
-          SizedBox(width: 80, child: Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 13))),
+          SizedBox(width: 80, child: Text(label, style: TextStyle(color: AppColors.textSecondary, fontSize: 13))),
           Expanded(child: Text(value, style: const TextStyle(fontWeight: FontWeight.w500))),
         ],
       ),
@@ -198,7 +198,7 @@ class _GuardScreenState extends State<GuardScreen> with SingleTickerProviderStat
 
   List<Widget> _cornerMarkers() {
     const size = 20.0;
-    const color = Colors.teal;
+    const color = AppColors.primaryAmber;
     return [
       Positioned(left: 55, top: 50, child: Container(width: size, height: 3, color: color)),
       Positioned(left: 55, top: 50, child: Container(width: 3, height: size, color: color)),
@@ -217,12 +217,12 @@ class _GuardScreenState extends State<GuardScreen> with SingleTickerProviderStat
       padding: const EdgeInsets.all(8),
       children: [
         Card(
-          color: Colors.amber.shade50,
+          color: AppColors.amberBg,
           child: Padding(
             padding: const EdgeInsets.all(12),
             child: Row(
               children: [
-                const Icon(Icons.info, color: Colors.amber),
+                const Icon(Icons.info, color: AppColors.statusWarning),
                 const SizedBox(width: 8),
                 Expanded(child: Text('${visitors.where((v) => v.status.name == 'pending').length} visitors waiting for approval', style: const TextStyle(fontSize: 13))),
               ],
@@ -241,8 +241,8 @@ class _GuardScreenState extends State<GuardScreen> with SingleTickerProviderStat
                 ? Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      IconButton(icon: const Icon(Icons.check_circle, color: Colors.green), onPressed: () { setState(() => v.status = VisitorStatus.approved); showSnack(context, '${v.name} approved ✓'); }),
-                      IconButton(icon: const Icon(Icons.cancel, color: Colors.red), onPressed: () { setState(() => v.status = VisitorStatus.rejected); showSnack(context, '${v.name} rejected'); }),
+                      IconButton(icon: const Icon(Icons.check_circle, color: AppColors.statusSuccess), onPressed: () { setState(() => v.status = VisitorStatus.approved); showSnack(context, '${v.name} approved ✓'); }),
+                      IconButton(icon: const Icon(Icons.cancel, color: AppColors.statusError), onPressed: () { setState(() => v.status = VisitorStatus.rejected); showSnack(context, '${v.name} rejected'); }),
                     ],
                   )
                 : Chip(
@@ -262,13 +262,13 @@ class _GuardScreenState extends State<GuardScreen> with SingleTickerProviderStat
         // Summary strip
         Container(
           padding: const EdgeInsets.all(12),
-          color: Colors.teal.shade50,
+          color: AppColors.amberBg,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _statChip('Today In', '${_entries.where((e) => !e.exited).length}', Colors.green),
-              _statChip('Exited', '${_entries.where((e) => e.exited).length}', Colors.blue),
-              _statChip('Total', '${_entries.length}', Colors.teal),
+              _statChip('Today In', '${_entries.where((e) => !e.exited).length}', AppColors.statusSuccess),
+              _statChip('Exited', '${_entries.where((e) => e.exited).length}', AppColors.primaryAmber),
+              _statChip('Total', '${_entries.length}', AppColors.primaryAmber),
             ],
           ),
         ),
@@ -280,8 +280,8 @@ class _GuardScreenState extends State<GuardScreen> with SingleTickerProviderStat
               return Card(
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: e.exited ? Colors.grey.shade200 : Colors.green.shade100,
-                    child: Icon(e.exited ? Icons.logout : Icons.login, color: e.exited ? Colors.grey : Colors.green),
+                    backgroundColor: e.exited ? AppColors.cardBorder : AppColors.greenBg,
+                    child: Icon(e.exited ? Icons.logout : Icons.login, color: e.exited ? AppColors.textTertiary : AppColors.statusSuccess),
                   ),
                   title: Text(e.name, style: const TextStyle(fontWeight: FontWeight.w500)),
                   subtitle: Text('${e.flat} • ${e.type} • In: ${formatTime(e.timeIn)}${e.timeOut != null ? " • Out: ${formatTime(e.timeOut!)}" : ""}'),
@@ -307,7 +307,7 @@ class _GuardScreenState extends State<GuardScreen> with SingleTickerProviderStat
     return Column(
       children: [
         Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+        Text(label, style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
       ],
     );
   }
@@ -318,17 +318,17 @@ class _GuardScreenState extends State<GuardScreen> with SingleTickerProviderStat
         Container(
           width: double.infinity,
           padding: const EdgeInsets.all(16),
-          color: _alerts.any((a) => a.isActive) ? Colors.red.shade100 : Colors.green.shade50,
+          color: _alerts.any((a) => a.isActive) ? AppColors.redBg : AppColors.greenBg,
           child: Row(
             children: [
               Icon(
                 _alerts.any((a) => a.isActive) ? Icons.warning : Icons.check_circle,
-                color: _alerts.any((a) => a.isActive) ? Colors.red : Colors.green,
+                color: _alerts.any((a) => a.isActive) ? AppColors.statusError : AppColors.statusSuccess,
               ),
               const SizedBox(width: 12),
               Text(
                 _alerts.any((a) => a.isActive) ? '🚨 ACTIVE ALERTS! Respond immediately!' : '✅ No active alerts. All clear.',
-                style: TextStyle(fontWeight: FontWeight.bold, color: _alerts.any((a) => a.isActive) ? Colors.red : Colors.green),
+                style: TextStyle(fontWeight: FontWeight.bold, color: _alerts.any((a) => a.isActive) ? AppColors.statusError : AppColors.statusSuccess),
               ),
             ],
           ),
@@ -349,7 +349,7 @@ class _GuardScreenState extends State<GuardScreen> with SingleTickerProviderStat
                 });
                 showSnack(context, '🚨 New SOS alert received!');
               },
-              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              style: FilledButton.styleFrom(backgroundColor: AppColors.statusError),
               icon: const Icon(Icons.sos),
               label: const Text('Simulate SOS Alert'),
             ),
@@ -357,27 +357,27 @@ class _GuardScreenState extends State<GuardScreen> with SingleTickerProviderStat
         ),
         Expanded(
           child: _alerts.isEmpty
-              ? const Center(child: Text('No SOS alerts\nकोई SOS अलर्ट नहीं', textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)))
+              ? const Center(child: Text('No SOS alerts\nकोई SOS अलर्ट नहीं', textAlign: TextAlign.center, style: TextStyle(color: AppColors.textTertiary)))
               : ListView.builder(
                   itemCount: _alerts.length,
                   itemBuilder: (context, i) {
                     final a = _alerts[i];
                     return Card(
-                      color: a.isActive ? Colors.red.shade50 : null,
+                      color: a.isActive ? AppColors.redBg : null,
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: a.isActive ? Colors.red : Colors.green,
+                          backgroundColor: a.isActive ? AppColors.statusError : AppColors.statusSuccess,
                           child: Icon(a.isActive ? Icons.warning : Icons.check, color: Colors.white),
                         ),
-                        title: Text('${a.type} Emergency - Flat ${a.flat}', style: TextStyle(fontWeight: FontWeight.bold, color: a.isActive ? Colors.red : null)),
+                        title: Text('${a.type} Emergency - Flat ${a.flat}', style: TextStyle(fontWeight: FontWeight.bold, color: a.isActive ? AppColors.statusError : null)),
                         subtitle: Text(formatDateTime(a.time)),
                         trailing: a.isActive
                             ? FilledButton(
                                 onPressed: () => setState(() => a.isActive = false),
-                                style: FilledButton.styleFrom(backgroundColor: Colors.green),
+                                style: FilledButton.styleFrom(backgroundColor: AppColors.statusSuccess),
                                 child: const Text('Respond'),
                               )
-                            : const Icon(Icons.check_circle, color: Colors.green),
+                            : const Icon(Icons.check_circle, color: AppColors.statusSuccess),
                       ),
                     );
                   },

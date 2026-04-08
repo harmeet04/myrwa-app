@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
+import '../../utils/app_colors.dart';
 
 class SosScreen extends StatefulWidget {
   const SosScreen({super.key});
@@ -35,7 +36,7 @@ class _SosScreenState extends State<SosScreen> with SingleTickerProviderStateMix
     return Scaffold(
       appBar: AppBar(
         title: const Text('SOS / Emergency / आपातकाल'),
-        backgroundColor: Colors.red.shade700,
+        backgroundColor: AppColors.statusError,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -59,10 +60,10 @@ class _SosScreenState extends State<SosScreen> with SingleTickerProviderStateMix
                     height: 180,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: _alertSent ? Colors.green : Colors.red,
+                      color: _alertSent ? AppColors.statusSuccess : AppColors.statusError,
                       boxShadow: [
                         BoxShadow(
-                          color: (_alertSent ? Colors.green : Colors.red).withValues(alpha: 0.4),
+                          color: (_alertSent ? AppColors.statusSuccess : AppColors.statusError).withValues(alpha: 0.4),
                           blurRadius: 30,
                           spreadRadius: 10,
                         ),
@@ -88,7 +89,7 @@ class _SosScreenState extends State<SosScreen> with SingleTickerProviderStateMix
             Text(
               _alertSent ? 'Help is on the way! / मदद आ रही है!' : 'Long press the button in emergency\nआपातकाल में बटन को दबाकर रखें',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15, color: Colors.grey.shade700),
+              style: TextStyle(fontSize: 15, color: AppColors.textPrimary),
             ),
             if (_alertSent) ...[
               const SizedBox(height: 12),
@@ -105,17 +106,17 @@ class _SosScreenState extends State<SosScreen> with SingleTickerProviderStateMix
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _EmergencyCard(icon: Icons.local_police, label: 'Police\nपुलिस', number: '100', color: Colors.indigo, onTap: () => showSnack(context, 'Calling Police (100)...'))),
+                Expanded(child: _EmergencyCard(icon: Icons.local_police, label: 'Police\nपुलिस', number: '100', color: AppColors.primaryAmber, onTap: () => showSnack(context, 'Calling Police (100)...'))),
                 const SizedBox(width: 8),
-                Expanded(child: _EmergencyCard(icon: Icons.fire_truck, label: 'Fire\nदमकल', number: '101', color: Colors.deepOrange, onTap: () => showSnack(context, 'Calling Fire Brigade (101)...'))),
+                Expanded(child: _EmergencyCard(icon: Icons.fire_truck, label: 'Fire\nदमकल', number: '101', color: AppColors.primaryOrange, onTap: () => showSnack(context, 'Calling Fire Brigade (101)...'))),
               ],
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                Expanded(child: _EmergencyCard(icon: Icons.emergency, label: 'Ambulance\nएम्बुलेंस', number: '108', color: Colors.red, onTap: () => showSnack(context, 'Calling Ambulance (108)...'))),
+                Expanded(child: _EmergencyCard(icon: Icons.emergency, label: 'Ambulance\nएम्बुलेंस', number: '108', color: AppColors.statusError, onTap: () => showSnack(context, 'Calling Ambulance (108)...'))),
                 const SizedBox(width: 8),
-                Expanded(child: _EmergencyCard(icon: Icons.security, label: 'Guard\nगार्ड', number: 'Gate', color: Colors.teal, onTap: () => showSnack(context, 'Alerting society guard...'))),
+                Expanded(child: _EmergencyCard(icon: Icons.security, label: 'Guard\nगार्ड', number: 'Gate', color: AppColors.primaryAmber, onTap: () => showSnack(context, 'Alerting society guard...'))),
               ],
             ),
 
@@ -126,10 +127,10 @@ class _SosScreenState extends State<SosScreen> with SingleTickerProviderStateMix
             const SizedBox(height: 8),
             ..._emergencyContacts.map((c) => Card(
               child: ListTile(
-                leading: CircleAvatar(backgroundColor: Colors.red.shade50, child: Icon(Icons.person, color: Colors.red.shade700)),
+                leading: CircleAvatar(backgroundColor: AppColors.redBg, child: Icon(Icons.person, color: AppColors.statusError)),
                 title: Text(c.$1),
                 subtitle: Text(c.$2),
-                trailing: IconButton(icon: const Icon(Icons.call, color: Colors.green), onPressed: () => showSnack(context, 'Calling ${c.$1}...')),
+                trailing: IconButton(icon: const Icon(Icons.call, color: AppColors.statusSuccess), onPressed: () => showSnack(context, 'Calling ${c.$1}...')),
               ),
             )),
 
@@ -151,7 +152,7 @@ class _SosScreenState extends State<SosScreen> with SingleTickerProviderStateMix
                 if (docs.isEmpty) {
                   return Padding(
                     padding: const EdgeInsets.all(16),
-                    child: Text('No recent alerts', style: TextStyle(color: Colors.grey.shade500)),
+                    child: Text('No recent alerts', style: TextStyle(color: AppColors.textTertiary)),
                   );
                 }
                 return Column(
@@ -164,14 +165,14 @@ class _SosScreenState extends State<SosScreen> with SingleTickerProviderStateMix
                     return Card(
                       child: ListTile(
                         leading: CircleAvatar(
-                          backgroundColor: Colors.orange.shade100,
-                          child: Icon(Icons.warning, color: Colors.orange.shade700),
+                          backgroundColor: AppColors.amberBg,
+                          child: Icon(Icons.warning, color: AppColors.statusWarning),
                         ),
                         title: Text('$type Emergency - Flat $flat'),
                         subtitle: Text('${formatDateTime(time)} • ${isActive ? "Active" : "Resolved"}'),
                         trailing: Icon(
                           isActive ? Icons.warning : Icons.check_circle,
-                          color: isActive ? Colors.orange : Colors.green.shade400,
+                          color: isActive ? AppColors.statusWarning : AppColors.statusSuccess,
                         ),
                       ),
                     );
@@ -192,7 +193,7 @@ class _SosScreenState extends State<SosScreen> with SingleTickerProviderStateMix
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        icon: const Icon(Icons.warning, color: Colors.red, size: 48),
+        icon: const Icon(Icons.warning, color: AppColors.statusError, size: 48),
         title: const Text('🚨 SOS Alert Sent!'),
         content: const Text(
           '✅ Guards alerted\n'

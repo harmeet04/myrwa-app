@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
 import '../../models/models.dart';
 import '../../utils/prefs_service.dart';
-import '../../services/firestore_service.dart';
+import '../../utils/app_colors.dart';
 
 class PollsScreen extends StatefulWidget {
   const PollsScreen({super.key});
@@ -47,9 +46,9 @@ class _PollsScreenState extends State<PollsScreen> {
       ),
       body: _polls.isEmpty
           ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.poll_outlined, size: 72, color: Colors.grey.shade300),
+              Icon(Icons.poll_outlined, size: 72, color: AppColors.cardBorder),
               const SizedBox(height: 12),
-              Text('No polls yet', style: TextStyle(fontSize: 16, color: Colors.grey.shade500)),
+              Text('No polls yet', style: TextStyle(fontSize: 16, color: AppColors.textTertiary)),
             ]))
           : RefreshIndicator(
               onRefresh: () async => await Future.delayed(const Duration(seconds: 1)),
@@ -70,25 +69,25 @@ class _PollsScreenState extends State<PollsScreen> {
                             Expanded(child: Text(p.question, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
                             if (p.isAnonymous) Tooltip(
                               message: 'Anonymous',
-                              child: Icon(Icons.visibility_off, size: 18, color: Colors.grey.shade400),
+                              child: Icon(Icons.visibility_off, size: 18, color: AppColors.textTertiary),
                             ),
                           ]),
                           const SizedBox(height: 6),
                           Row(children: [
-                            Icon(Icons.person_outline, size: 14, color: Colors.grey.shade500),
+                            Icon(Icons.person_outline, size: 14, color: AppColors.textTertiary),
                             const SizedBox(width: 4),
-                            Text(p.createdBy, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                            Text(p.createdBy, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                             const Spacer(),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
                               decoration: BoxDecoration(
-                                color: p.isActive ? Colors.blue.shade50 : Colors.grey.shade100,
+                                color: p.isActive ? AppColors.primaryAmber.withValues(alpha: 0.1) : AppColors.cardBorder,
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Row(mainAxisSize: MainAxisSize.min, children: [
-                                Icon(Icons.timer_outlined, size: 12, color: p.isActive ? Colors.blue : Colors.grey),
+                                Icon(Icons.timer_outlined, size: 12, color: p.isActive ? AppColors.primaryAmber : Colors.grey),
                                 const SizedBox(width: 4),
-                                Text(timeLeft, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: p.isActive ? Colors.blue : Colors.grey)),
+                                Text(timeLeft, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: p.isActive ? AppColors.primaryAmber : Colors.grey)),
                               ]),
                             ),
                           ]),
@@ -111,7 +110,7 @@ class _PollsScreenState extends State<PollsScreen> {
                                       const SizedBox(width: 8),
                                       Text('Voted for "${p.options[oi]}"'),
                                     ]),
-                                    backgroundColor: Colors.green,
+                                    backgroundColor: AppColors.statusSuccess,
                                     behavior: SnackBarBehavior.floating,
                                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                                     duration: const Duration(seconds: 2),
@@ -121,8 +120,8 @@ class _PollsScreenState extends State<PollsScreen> {
                                   duration: const Duration(milliseconds: 300),
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: isSelected ? cs.primary : (isWinner ? Colors.green : Colors.grey.shade300), width: isSelected ? 2 : 1),
-                                    color: isSelected ? cs.primary.withValues(alpha: 0.05) : (isWinner ? Colors.green.withValues(alpha: 0.03) : null),
+                                    border: Border.all(color: isSelected ? cs.primary : (isWinner ? AppColors.statusSuccess : AppColors.cardBorder), width: isSelected ? 2 : 1),
+                                    color: isSelected ? cs.primary.withValues(alpha: 0.05) : (isWinner ? AppColors.statusSuccess.withValues(alpha: 0.03) : null),
                                   ),
                                   clipBehavior: Clip.antiAlias,
                                   child: Stack(
@@ -140,17 +139,17 @@ class _PollsScreenState extends State<PollsScreen> {
                                       Padding(
                                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
                                         child: Row(children: [
-                                          if (!voted) Icon(Icons.radio_button_unchecked, size: 18, color: Colors.grey.shade400),
+                                          if (!voted) Icon(Icons.radio_button_unchecked, size: 18, color: AppColors.textTertiary),
                                           if (voted && isSelected) Icon(Icons.check_circle, size: 18, color: cs.primary),
-                                          if (voted && !isSelected) Icon(Icons.circle_outlined, size: 18, color: Colors.grey.shade400),
+                                          if (voted && !isSelected) Icon(Icons.circle_outlined, size: 18, color: AppColors.textTertiary),
                                           const SizedBox(width: 10),
                                           Expanded(child: Text(p.options[oi], style: TextStyle(fontWeight: isSelected ? FontWeight.w600 : null))),
                                           if (voted) ...[
-                                            Text('${p.votes[oi]}', style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
+                                            Text('${p.votes[oi]}', style: TextStyle(fontSize: 12, color: AppColors.textTertiary)),
                                             const SizedBox(width: 6),
                                             Text('${(pct * 100).toInt()}%', style: TextStyle(
                                               fontWeight: FontWeight.bold, fontSize: 14,
-                                              color: isSelected ? cs.primary : (isWinner ? Colors.green : Colors.grey.shade600),
+                                              color: isSelected ? cs.primary : (isWinner ? AppColors.statusSuccess : AppColors.textSecondary),
                                             )),
                                           ],
                                         ]),
@@ -163,14 +162,14 @@ class _PollsScreenState extends State<PollsScreen> {
                           }),
                           const SizedBox(height: 4),
                           Row(children: [
-                            Icon(Icons.people_outline, size: 14, color: Colors.grey.shade500),
+                            Icon(Icons.people_outline, size: 14, color: AppColors.textTertiary),
                             const SizedBox(width: 4),
-                            Text('${p.totalVotes} votes', style: TextStyle(fontSize: 12, color: Colors.grey.shade500, fontWeight: FontWeight.w500)),
+                            Text('${p.totalVotes} votes', style: TextStyle(fontSize: 12, color: AppColors.textTertiary, fontWeight: FontWeight.w500)),
                             if (voted) ...[
                               const Spacer(),
-                              Icon(Icons.check, size: 14, color: Colors.green.shade400),
+                              Icon(Icons.check, size: 14, color: AppColors.statusSuccess),
                               const SizedBox(width: 4),
-                              Text('You voted', style: TextStyle(fontSize: 12, color: Colors.green.shade400)),
+                              Text('You voted', style: TextStyle(fontSize: 12, color: AppColors.statusSuccess)),
                             ],
                           ]),
                         ],
@@ -206,7 +205,7 @@ class _PollsScreenState extends State<PollsScreen> {
                 ...List.generate(optionCtrls.length, (i) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: TextField(controller: optionCtrls[i], decoration: InputDecoration(labelText: 'Option ${i + 1}',
-                    suffixIcon: optionCtrls.length > 2 ? IconButton(icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+                    suffixIcon: optionCtrls.length > 2 ? IconButton(icon: const Icon(Icons.remove_circle_outline, color: AppColors.statusError),
                       onPressed: () => setBS(() => optionCtrls.removeAt(i))) : null)),
                 )),
                 TextButton.icon(

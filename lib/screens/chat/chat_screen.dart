@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../services/firestore_service.dart';
 import '../../services/auth_service.dart';
-import '../../utils/prefs_service.dart';
+import '../../utils/app_colors.dart';
 
 class ChatScreen extends StatefulWidget {
   final String otherName;
@@ -97,10 +97,10 @@ class _ChatScreenState extends State<ChatScreen> {
                           if (docs.isEmpty) {
                             return Center(
                               child: Column(mainAxisSize: MainAxisSize.min, children: [
-                                Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey.shade300),
+                                Icon(Icons.chat_bubble_outline, size: 64, color: AppColors.cardBorder),
                                 const SizedBox(height: 12),
                                 Text('No messages yet.\nSay hello! 👋', textAlign: TextAlign.center,
-                                  style: TextStyle(color: Colors.grey.shade500)),
+                                  style: TextStyle(color: AppColors.textTertiary)),
                               ]),
                             );
                           }
@@ -137,7 +137,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
                               return Column(
                                 children: [
-                                  if (dateSeparator != null) dateSeparator,
+                                  ?dateSeparator,
                                   Align(
                                     alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
                                     child: Container(
@@ -164,7 +164,7 @@ class _ChatScreenState extends State<ChatScreen> {
                                             children: [
                                               Text(
                                                 '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}',
-                                                style: TextStyle(fontSize: 10, color: isMe ? Colors.white70 : Colors.grey.shade500),
+                                                style: TextStyle(fontSize: 10, color: isMe ? Colors.white70 : AppColors.textTertiary),
                                               ),
                                               if (isMe) ...[
                                                 const SizedBox(width: 3),
@@ -225,10 +225,10 @@ class _ChatScreenState extends State<ChatScreen> {
         margin: const EdgeInsets.symmetric(vertical: 12),
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.grey.shade200,
+          color: AppColors.cardBorder,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Text(label, style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
+        child: Text(label, style: TextStyle(fontSize: 11, color: AppColors.textSecondary, fontWeight: FontWeight.w500)),
       ),
     );
   }

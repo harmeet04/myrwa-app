@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
 import '../../models/models.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
+import '../../utils/app_colors.dart';
 
 class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
@@ -15,7 +15,6 @@ class EventsScreen extends StatefulWidget {
 
 class _EventsScreenState extends State<EventsScreen> {
   late List<Event> _events;
-  bool _useFirestore = false;
 
   @override
   void initState() {
@@ -38,7 +37,6 @@ class _EventsScreenState extends State<EventsScreen> {
       if (snap.docs.isNotEmpty && mounted) {
         setState(() {
           _events = snap.docs.map((d) => FirestoreService.eventFromDoc(d)).toList();
-          _useFirestore = true;
         });
       }
     });
@@ -84,15 +82,15 @@ class _EventsScreenState extends State<EventsScreen> {
                     padding: const EdgeInsets.all(16),
                     child: Row(
                       children: [
-                        Icon(Icons.calendar_today, size: 16, color: Colors.grey.shade600),
+                        Icon(Icons.calendar_today, size: 16, color: AppColors.textSecondary),
                         const SizedBox(width: 6),
-                        Text(formatDateTime(e.date), style: TextStyle(color: Colors.grey.shade700)),
+                        Text(formatDateTime(e.date), style: TextStyle(color: AppColors.textPrimary)),
                         const SizedBox(width: 16),
-                        Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
+                        Icon(Icons.location_on, size: 16, color: AppColors.textSecondary),
                         const SizedBox(width: 4),
-                        Text(e.location, style: TextStyle(color: Colors.grey.shade700)),
+                        Text(e.location, style: TextStyle(color: AppColors.textPrimary)),
                         const Spacer(),
-                        Text('$spotsLeft spots left', style: TextStyle(color: spotsLeft < 10 ? Colors.red : Colors.green, fontWeight: FontWeight.w500, fontSize: 12)),
+                        Text('$spotsLeft spots left', style: TextStyle(color: spotsLeft < 10 ? AppColors.statusError : AppColors.statusSuccess, fontWeight: FontWeight.w500, fontSize: 12)),
                       ],
                     ),
                   ),
@@ -101,7 +99,7 @@ class _EventsScreenState extends State<EventsScreen> {
                     child: Row(
                       children: [
                         Text('${e.rsvpCount} going', style: TextStyle(color: cs.primary, fontWeight: FontWeight.w500)),
-                        if (e.maybeCount > 0) Text(', ${e.maybeCount} maybe', style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                        if (e.maybeCount > 0) Text(', ${e.maybeCount} maybe', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                         const Spacer(),
                         if (!e.hasRsvpd) FilledButton.tonal(
                           onPressed: () {
@@ -148,7 +146,7 @@ class _EventsScreenState extends State<EventsScreen> {
             controller: ctrl,
             padding: const EdgeInsets.all(20),
             children: [
-              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.cardBorder, borderRadius: BorderRadius.circular(2)))),
               const SizedBox(height: 16),
               Text(e.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
@@ -188,7 +186,7 @@ class _EventsScreenState extends State<EventsScreen> {
               Text('Attendees (${e.attendees.length})', style: TextStyle(fontWeight: FontWeight.bold, color: cs.primary)),
               const SizedBox(height: 8),
               if (e.attendees.isEmpty)
-                Text('No attendees yet', style: TextStyle(color: Colors.grey.shade500))
+                Text('No attendees yet', style: TextStyle(color: AppColors.textTertiary))
               else
                 Wrap(
                   spacing: 6, runSpacing: 6,
@@ -200,12 +198,12 @@ class _EventsScreenState extends State<EventsScreen> {
                 ),
               if (e.maybeAttendees.isNotEmpty) ...[
                 const SizedBox(height: 12),
-                Text('Maybe (${e.maybeAttendees.length})', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey.shade600)),
+                Text('Maybe (${e.maybeAttendees.length})', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
                 const SizedBox(height: 8),
                 Wrap(
                   spacing: 6, runSpacing: 6,
                   children: e.maybeAttendees.map((name) => Chip(
-                    avatar: CircleAvatar(backgroundColor: Colors.grey.shade200, child: Text(name[0], style: const TextStyle(fontSize: 11))),
+                    avatar: CircleAvatar(backgroundColor: AppColors.cardBorder, child: Text(name[0], style: const TextStyle(fontSize: 11))),
                     label: Text(name, style: const TextStyle(fontSize: 12)),
                     visualDensity: VisualDensity.compact,
                   )).toList(),
@@ -228,6 +226,6 @@ class _Row extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: 4),
-    child: Row(children: [Icon(icon, size: 18, color: Colors.grey.shade600), const SizedBox(width: 8), Expanded(child: Text(text))]),
+    child: Row(children: [Icon(icon, size: 18, color: AppColors.textSecondary), const SizedBox(width: 8), Expanded(child: Text(text))]),
   );
 }

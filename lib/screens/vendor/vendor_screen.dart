@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
+import '../../utils/app_colors.dart';
 
 class VendorScreen extends StatefulWidget {
   const VendorScreen({super.key});
@@ -66,9 +67,9 @@ class _VendorScreenState extends State<VendorScreen> {
 
                 if (filtered.isEmpty) {
                   return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.handyman, size: 72, color: Colors.grey.shade300),
+                    Icon(Icons.handyman, size: 72, color: AppColors.cardBorder),
                     const SizedBox(height: 12),
-                    Text('No vendors in this category', style: TextStyle(color: Colors.grey.shade500)),
+                    Text('No vendors in this category', style: TextStyle(color: AppColors.textTertiary)),
                   ]));
                 }
 
@@ -91,16 +92,16 @@ class _VendorScreenState extends State<VendorScreen> {
                                 if (v.isVerified)
                                   Container(
                                     padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(color: Colors.green.shade100, borderRadius: BorderRadius.circular(8)),
+                                    decoration: BoxDecoration(color: AppColors.greenBg, borderRadius: BorderRadius.circular(8)),
                                     child: const Row(mainAxisSize: MainAxisSize.min, children: [
-                                      Icon(Icons.verified, size: 14, color: Colors.green),
+                                      Icon(Icons.verified, size: 14, color: AppColors.statusSuccess),
                                       SizedBox(width: 2),
-                                      Text('RWA Verified', style: TextStyle(fontSize: 10, color: Colors.green, fontWeight: FontWeight.w600)),
+                                      Text('RWA Verified', style: TextStyle(fontSize: 10, color: AppColors.statusSuccess, fontWeight: FontWeight.w600)),
                                     ]),
                                   ),
                               ]),
                               const SizedBox(height: 4),
-                              Text(v.category, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+                              Text(v.category, style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                               const SizedBox(height: 4),
                               Row(children: [
                                 ...List.generate(5, (si) => Icon(
@@ -112,9 +113,9 @@ class _VendorScreenState extends State<VendorScreen> {
                             ])),
                           ]),
                           const SizedBox(height: 8),
-                          Text(v.description, style: TextStyle(color: Colors.grey.shade700, fontSize: 13)),
+                          Text(v.description, style: TextStyle(color: AppColors.textPrimary, fontSize: 13)),
                           const SizedBox(height: 4),
-                          Text('💰 ${v.priceRange}  •  📍 ${v.area}', style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+                          Text('💰 ${v.priceRange}  •  📍 ${v.area}', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                           const SizedBox(height: 12),
                           Row(children: [
                             Expanded(child: OutlinedButton.icon(
@@ -199,15 +200,15 @@ class _Vendor {
 
   Color get color {
     switch (category) {
-      case 'Plumber': return Colors.blue;
-      case 'Electrician': return Colors.amber.shade800;
-      case 'Maid': return Colors.purple;
-      case 'Cook': return Colors.orange;
-      case 'Tutor': return Colors.teal;
-      case 'Carpenter': return Colors.brown;
-      case 'Pest Control': return Colors.green;
-      case 'AC Repair': return Colors.cyan;
-      default: return Colors.grey;
+      case 'Plumber': return AppColors.primaryAmber;
+      case 'Electrician': return AppColors.primaryOrange;
+      case 'Maid': return const Color(0xFF7C3AED);
+      case 'Cook': return AppColors.primaryOrange;
+      case 'Tutor': return AppColors.primaryAmber;
+      case 'Carpenter': return const Color(0xFF78350F);
+      case 'Pest Control': return AppColors.statusSuccess;
+      case 'AC Repair': return AppColors.primaryAmber;
+      default: return AppColors.textTertiary;
     }
   }
 }

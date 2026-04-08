@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../utils/mock_data.dart';
-import '../../services/firestore_service.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
 import '../../models/models.dart';
+import '../../utils/app_colors.dart';
 import '../chat/chat_screen.dart';
 
 class MarketplaceScreen extends StatefulWidget {
@@ -49,10 +49,10 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
 
   Color _conditionColor(String c) {
     switch (c) {
-      case 'Like New': return Colors.green;
-      case 'Used': return Colors.orange;
-      case 'Good': return Colors.blue;
-      default: return Colors.grey;
+      case 'Like New': return AppColors.statusSuccess;
+      case 'Used': return AppColors.statusWarning;
+      case 'Good': return AppColors.primaryAmber;
+      default: return AppColors.textTertiary;
     }
   }
 
@@ -80,7 +80,6 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final cats = ['All', ...{..._items.map((i) => i.category)}];
     final serviceCats = ['All', 'General Store', 'Salon', 'Tuition', 'Gym', 'Laundry', 'Pharmacy'];
     return Scaffold(
@@ -137,9 +136,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
               Expanded(
                 child: _filtered.isEmpty
                     ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(Icons.shopping_bag_outlined, size: 72, color: Colors.grey.shade300),
+                        Icon(Icons.shopping_bag_outlined, size: 72, color: AppColors.cardBorder),
                         const SizedBox(height: 12),
-                        Text('No items found', style: TextStyle(fontSize: 16, color: Colors.grey.shade500)),
+                        Text('No items found', style: TextStyle(fontSize: 16, color: AppColors.textTertiary)),
                       ]))
                     : RefreshIndicator(
                         onRefresh: () async => await Future.delayed(const Duration(seconds: 1)),
@@ -202,22 +201,22 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(s.shopName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                    Text(s.category, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                                    Text(s.category, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                                   ],
                                 )),
                                 Container(
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(color: Colors.green.shade50, borderRadius: BorderRadius.circular(8)),
-                                  child: Text(s.timings, style: TextStyle(fontSize: 11, color: Colors.green.shade700, fontWeight: FontWeight.w500)),
+                                  decoration: BoxDecoration(color: AppColors.greenBg, borderRadius: BorderRadius.circular(8)),
+                                  child: Text(s.timings, style: TextStyle(fontSize: 11, color: AppColors.statusSuccess, fontWeight: FontWeight.w500)),
                                 ),
                               ]),
                               const SizedBox(height: 8),
-                              Text(s.description, style: TextStyle(color: Colors.grey.shade700)),
+                              Text(s.description, style: TextStyle(color: AppColors.textPrimary)),
                               const SizedBox(height: 8),
                               Row(children: [
-                                Icon(Icons.location_on, size: 14, color: Colors.grey.shade600),
+                                Icon(Icons.location_on, size: 14, color: AppColors.textSecondary),
                                 const SizedBox(width: 4),
-                                Text(s.flat, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                                Text(s.flat, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                                 const Spacer(),
                                 OutlinedButton.icon(
                                   onPressed: () => showSnack(context, 'Calling ${s.contact}...'),
@@ -255,13 +254,13 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
 
   Color _serviceCatColor(String cat) {
     switch (cat) {
-      case 'General Store': return Colors.green;
-      case 'Salon': return Colors.pink;
-      case 'Tuition': return Colors.indigo;
-      case 'Gym': return Colors.orange;
-      case 'Laundry': return Colors.blue;
-      case 'Pharmacy': return Colors.red;
-      default: return Colors.grey;
+      case 'General Store': return AppColors.statusSuccess;
+      case 'Salon': return const Color(0xFFEC4899);
+      case 'Tuition': return AppColors.primaryAmber;
+      case 'Gym': return AppColors.primaryOrange;
+      case 'Laundry': return AppColors.primaryAmber;
+      case 'Pharmacy': return AppColors.statusError;
+      default: return AppColors.textTertiary;
     }
   }
 
@@ -277,7 +276,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.cardBorder, borderRadius: BorderRadius.circular(2)))),
             const SizedBox(height: 16),
             // Image placeholder
             Container(
@@ -291,7 +290,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                 children: [
                   Icon(_itemCategoryIcon(item.category), size: 56, color: _itemCategoryColor(item.category).withValues(alpha: 0.5)),
                   const SizedBox(height: 4),
-                  if (item.hasPhoto) Text('Photo', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
+                  if (item.hasPhoto) Text('Photo', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
                 ],
               ),
             ),
@@ -305,7 +304,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
               ),
             ]),
             const SizedBox(height: 8),
-            Text(formatCurrency(item.price), style: const TextStyle(fontSize: 26, color: Color(0xFF2E7D32), fontWeight: FontWeight.bold)),
+            Text(formatCurrency(item.price), style: const TextStyle(fontSize: 26, color: AppColors.statusSuccess, fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Text(item.description, style: const TextStyle(height: 1.5)),
             const SizedBox(height: 16),
@@ -315,7 +314,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
               const SizedBox(width: 8),
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(item.seller, style: const TextStyle(fontWeight: FontWeight.w600)),
-                Text('Flat ${item.sellerFlat} • ${timeAgo(item.date)}', style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                Text('Flat ${item.sellerFlat} • ${timeAgo(item.date)}', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
               ]),
             ]),
             const SizedBox(height: 20),
@@ -346,8 +345,8 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
             if (item.isSold) Container(
               width: double.infinity,
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.red.shade50, borderRadius: BorderRadius.circular(12)),
-              child: const Text('This item has been sold', textAlign: TextAlign.center, style: TextStyle(color: Colors.red, fontWeight: FontWeight.w500)),
+              decoration: BoxDecoration(color: AppColors.redBg, borderRadius: BorderRadius.circular(12)),
+              child: const Text('This item has been sold', textAlign: TextAlign.center, style: TextStyle(color: AppColors.statusError, fontWeight: FontWeight.w500)),
             ),
             const SizedBox(height: 8),
           ],
@@ -385,7 +384,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                   onPressed: () => setBS(() => addPhoto = !addPhoto),
                   icon: Icon(addPhoto ? Icons.check_circle : Icons.add_a_photo),
                   label: Text(addPhoto ? 'Photo Added ✓' : 'Add Photo'),
-                  style: OutlinedButton.styleFrom(foregroundColor: addPhoto ? Colors.green : null),
+                  style: OutlinedButton.styleFrom(foregroundColor: addPhoto ? AppColors.statusSuccess : null),
                 ),
                 const SizedBox(height: 16),
                 FilledButton(
@@ -479,9 +478,9 @@ class _ItemCard extends StatelessWidget {
                 children: [
                   Text(item.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                   const SizedBox(height: 6),
-                  Text(formatCurrency(item.price), style: const TextStyle(color: Color(0xFF2E7D32), fontWeight: FontWeight.bold, fontSize: 17)),
+                  Text(formatCurrency(item.price), style: const TextStyle(color: AppColors.statusSuccess, fontWeight: FontWeight.bold, fontSize: 17)),
                   const SizedBox(height: 4),
-                  Text('${item.seller} • ${item.sellerFlat}', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                  Text('${item.seller} • ${item.sellerFlat}', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                 ],
               ),
             ),

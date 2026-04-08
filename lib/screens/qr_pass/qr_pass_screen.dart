@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
+import '../../utils/app_colors.dart';
 
 class QrPassScreen extends StatefulWidget {
   const QrPassScreen({super.key});
@@ -32,10 +33,10 @@ class _QrPassScreenState extends State<QrPassScreen> {
           final docs = snapshot.data?.docs ?? [];
           if (docs.isEmpty) {
             return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Icon(Icons.qr_code_2, size: 72, color: Colors.grey.shade300),
+              Icon(Icons.qr_code_2, size: 72, color: AppColors.cardBorder),
               const SizedBox(height: 12),
               Text('No passes yet.\nTap + to create one.', textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade500)),
+                style: TextStyle(color: AppColors.textTertiary)),
             ]));
           }
           return ListView.builder(
@@ -53,16 +54,16 @@ class _QrPassScreenState extends State<QrPassScreen> {
               return Card(
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: isUsed ? Colors.grey.shade200 : Colors.blue.shade100,
-                    child: Icon(isUsed ? Icons.check_circle : Icons.qr_code_2, color: isUsed ? Colors.grey : Colors.blue.shade700),
+                    backgroundColor: isUsed ? AppColors.cardBorder : AppColors.amberBg,
+                    child: Icon(isUsed ? Icons.check_circle : Icons.qr_code_2, color: isUsed ? AppColors.textTertiary : AppColors.primaryAmber),
                   ),
                   title: Text(visitorName, style: const TextStyle(fontWeight: FontWeight.w600)),
                   subtitle: Text('$purpose • ${formatDate(validDate)}\nCode: $code'),
                   isThreeLine: true,
                   trailing: isUsed
-                      ? Chip(label: const Text('Used', style: TextStyle(fontSize: 11)), backgroundColor: Colors.grey.shade200)
+                      ? Chip(label: const Text('Used', style: TextStyle(fontSize: 11)), backgroundColor: AppColors.cardBorder)
                       : IconButton(
-                          icon: const Icon(Icons.qr_code, size: 32, color: Colors.blue),
+                          icon: const Icon(Icons.qr_code, size: 32, color: AppColors.primaryAmber),
                           onPressed: () => _showQr(docId, visitorName, purpose, validDate, code, isUsed),
                         ),
                   onTap: () => _showQr(docId, visitorName, purpose, validDate, code, isUsed),
@@ -80,18 +81,18 @@ class _QrPassScreenState extends State<QrPassScreen> {
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => Padding(
+      builder: (ctx) => Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             const SizedBox(height: 8),
-            Text('Visitor QR Pass', style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+            Text('Visitor QR Pass', style: Theme.of(ctx).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text(visitorName, style: const TextStyle(fontSize: 18)),
             const SizedBox(height: 4),
-            Text('Purpose: $purpose', style: TextStyle(color: Colors.grey.shade600)),
-            Text('Valid: ${formatDate(validDate)}', style: TextStyle(color: Colors.grey.shade600)),
+            Text('Purpose: $purpose', style: TextStyle(color: AppColors.textSecondary)),
+            Text('Valid: ${formatDate(validDate)}', style: TextStyle(color: AppColors.textSecondary)),
             const SizedBox(height: 20),
             Container(
               width: 200, height: 200,
@@ -102,21 +103,21 @@ class _QrPassScreenState extends State<QrPassScreen> {
             Text(code, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 4)),
             const SizedBox(height: 8),
             Text('Show this to the guard at the gate\nगार्ड को यह दिखाएं', textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+              style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
             const SizedBox(height: 16),
             if (!isUsed)
               Row(children: [
                 Expanded(child: OutlinedButton.icon(
-                  onPressed: () { showSnack(context, 'QR Pass shared via WhatsApp!'); Navigator.pop(context); },
+                  onPressed: () { showSnack(ctx, 'QR Pass shared via WhatsApp!'); Navigator.pop(ctx); },
                   icon: const Icon(Icons.share), label: const Text('Share / शेयर'),
                 )),
                 const SizedBox(width: 12),
                 Expanded(child: FilledButton.icon(
                   onPressed: () async {
                     await FirestoreService.updateDoc('qr_passes', docId, {'isUsed': true});
-                    if (!context.mounted) return;
-                    Navigator.pop(context);
-                    showSnack(context, 'Pass marked as used ✓');
+                    if (!ctx.mounted) return;
+                    Navigator.pop(ctx);
+                    showSnack(ctx, 'Pass marked as used ✓');
                   },
                   icon: const Icon(Icons.check), label: const Text('Mark Used'),
                 )),
@@ -164,9 +165,9 @@ class _QrPassScreenState extends State<QrPassScreen> {
                     'code': code,
                     'isUsed': false,
                   });
-                  if (!context.mounted) return;
+                  if (!ctx.mounted) return;
                   Navigator.pop(ctx);
-                  showSnack(context, 'QR Pass created! Code: $code');
+                  showSnack(ctx, 'QR Pass created! Code: $code');
                 },
                 icon: const Icon(Icons.qr_code),
                 label: const Text('Generate QR Pass', style: TextStyle(fontSize: 16)),

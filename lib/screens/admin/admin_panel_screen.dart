@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../utils/mock_data.dart';
-import '../../services/firestore_service.dart';
 import '../../utils/helpers.dart';
+import '../../utils/app_colors.dart';
 
 class AdminPanelScreen extends StatelessWidget {
   const AdminPanelScreen({super.key});
@@ -20,16 +20,16 @@ class AdminPanelScreen extends StatelessWidget {
       body: ListView(
         children: [
           _AdminTile(icon: Icons.receipt_long, title: 'Society Bill Summary',
-            subtitle: 'View who paid, who hasn\'t', color: Colors.green,
+            subtitle: 'View who paid, who hasn\'t', color: AppColors.statusSuccess,
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _BillSummaryPage()))),
           _AdminTile(icon: Icons.people, title: 'Manage Residents',
-            subtitle: 'View all, remove members', color: Colors.teal,
+            subtitle: 'View all, remove members', color: AppColors.primaryAmber,
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _ManageResidentsPage()))),
           _AdminTile(icon: Icons.report, title: 'All Complaints',
-            subtitle: 'Respond and manage complaints', color: Colors.orange,
+            subtitle: 'Respond and manage complaints', color: AppColors.statusWarning,
             onTap: () => Navigator.pop(context)),
           _AdminTile(icon: Icons.campaign, title: 'Manage Notices',
-            subtitle: 'Pin/unpin, post announcements', color: Colors.blue,
+            subtitle: 'Pin/unpin, post announcements', color: AppColors.primaryAmber,
             onTap: () => Navigator.pop(context)),
         ],
       ),
@@ -75,39 +75,39 @@ class _BillSummaryPage extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           Row(children: [
-            Expanded(child: _SummaryCard('Collected', formatCurrency(totalCollected), Colors.green)),
+            Expanded(child: _SummaryCard('Collected', formatCurrency(totalCollected), AppColors.statusSuccess)),
             const SizedBox(width: 12),
-            Expanded(child: _SummaryCard('Pending', formatCurrency(totalPending), Colors.orange)),
+            Expanded(child: _SummaryCard('Pending', formatCurrency(totalPending), AppColors.statusWarning)),
           ]),
           const SizedBox(height: 8),
           Row(children: [
-            Expanded(child: _SummaryCard('Paid', '${paid.length} flats', Colors.green)),
+            Expanded(child: _SummaryCard('Paid', '${paid.length} flats', AppColors.statusSuccess)),
             const SizedBox(width: 12),
-            Expanded(child: _SummaryCard('Unpaid', '${unpaid.length} flats', Colors.red)),
+            Expanded(child: _SummaryCard('Unpaid', '${unpaid.length} flats', AppColors.statusError)),
           ]),
           const SizedBox(height: 20),
-          const Text('Paid ✅', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.green)),
+          const Text('Paid ✅', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.statusSuccess)),
           const SizedBox(height: 8),
           ...paid.map((b) => ListTile(
             dense: true,
-            leading: const Icon(Icons.check_circle, color: Colors.green, size: 20),
+            leading: const Icon(Icons.check_circle, color: AppColors.statusSuccess, size: 20),
             title: Text('Flat ${b.flat}', style: const TextStyle(fontWeight: FontWeight.w500)),
             subtitle: Text(b.title),
-            trailing: Text(formatCurrency(b.amount), style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.green)),
+            trailing: Text(formatCurrency(b.amount), style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.statusSuccess)),
           )),
           const SizedBox(height: 16),
-          const Text('Unpaid ❌', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.red)),
+          const Text('Unpaid ❌', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.statusError)),
           const SizedBox(height: 8),
           ...unpaid.map((b) => ListTile(
             dense: true,
             leading: Icon(
               b.status == BillStatus.overdue ? Icons.error : Icons.pending,
-              color: b.status == BillStatus.overdue ? Colors.red : Colors.orange, size: 20,
+              color: b.status == BillStatus.overdue ? AppColors.statusError : AppColors.statusWarning, size: 20,
             ),
             title: Text('Flat ${b.flat}', style: const TextStyle(fontWeight: FontWeight.w500)),
             subtitle: Text('${b.title} • Due: ${formatDate(b.dueDate)}'),
             trailing: Text(formatCurrency(b.amount), style: TextStyle(
-              fontWeight: FontWeight.bold, color: b.status == BillStatus.overdue ? Colors.red : Colors.orange)),
+              fontWeight: FontWeight.bold, color: b.status == BillStatus.overdue ? AppColors.statusError : AppColors.statusWarning)),
           )),
         ],
       ),
@@ -127,7 +127,7 @@ class _SummaryCard extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Column(
         children: [
-          Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 13)),
+          Text(label, style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
           const SizedBox(height: 4),
           Text(value, style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: color)),
         ],
@@ -181,7 +181,7 @@ class _ManageResidentsPageState extends State<_ManageResidentsPage> {
             ]),
             subtitle: Text('Flat ${r.flat} • ${r.phone}'),
             trailing: r.isAdmin ? null : IconButton(
-              icon: const Icon(Icons.remove_circle_outline, color: Colors.red),
+              icon: const Icon(Icons.remove_circle_outline, color: AppColors.statusError),
               onPressed: () {
                 showDialog(
                   context: context,
@@ -191,7 +191,7 @@ class _ManageResidentsPageState extends State<_ManageResidentsPage> {
                     actions: [
                       TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
                       FilledButton(
-                        style: FilledButton.styleFrom(backgroundColor: Colors.red),
+                        style: FilledButton.styleFrom(backgroundColor: AppColors.statusError),
                         onPressed: () {
                           setState(() => _residents.removeAt(i));
                           Navigator.pop(context);

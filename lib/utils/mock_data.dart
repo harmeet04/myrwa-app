@@ -39,8 +39,8 @@ class MockData {
   }
 
   static const List<int> _avatarColors = [
-    0xFF1565C0, 0xFFC62828, 0xFF2E7D32, 0xFF6A1B9A,
-    0xFFEF6C00, 0xFF00838F, 0xFF4E342E, 0xFF37474F,
+    0xFFF59E0B, 0xFFDC2626, 0xFF22C55E, 0xFF7C3AED,
+    0xFFEA580C, 0xFFF59E0B, 0xFF78350F, 0xFF292524,
   ];
 
   static List<Notice> get notices => [

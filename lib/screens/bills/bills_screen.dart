@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../models/models.dart';
 import '../../utils/mock_data.dart';
-import '../../services/firestore_service.dart';
 import '../../utils/helpers.dart';
+import '../../utils/app_colors.dart';
 
 class BillsScreen extends StatefulWidget {
   const BillsScreen({super.key});
@@ -93,7 +93,7 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
       return Center(child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(isPaid ? Icons.receipt_long : Icons.check_circle, size: 64, color: Colors.grey),
+          Icon(isPaid ? Icons.receipt_long : Icons.check_circle, size: 64, color: AppColors.textTertiary),
           const SizedBox(height: 8),
           Text(isPaid ? 'No payment history' : 'All bills paid! 🎉'),
         ],
@@ -129,7 +129,7 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
                       Text(b.status == BillStatus.paid
                           ? 'Paid on ${formatDate(b.paidDate!)}'
                           : 'Due: ${formatDate(b.dueDate)}',
-                          style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+                          style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                     ],
                   )),
                   Column(
@@ -158,9 +158,9 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
 
   Color _billColor(Bill b) {
     switch (b.status) {
-      case BillStatus.paid: return Colors.green;
-      case BillStatus.pending: return Colors.orange;
-      case BillStatus.overdue: return Colors.red;
+      case BillStatus.paid: return AppColors.statusSuccess;
+      case BillStatus.pending: return AppColors.statusWarning;
+      case BillStatus.overdue: return AppColors.statusError;
     }
   }
 
@@ -178,7 +178,7 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
             const SizedBox(height: 12),
             Text(formatCurrency(b.amount), style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: _billColor(b))),
             const SizedBox(height: 12),
-            Text(b.description, style: TextStyle(color: Colors.grey.shade600)),
+            Text(b.description, style: TextStyle(color: AppColors.textSecondary)),
             const SizedBox(height: 8),
             Text('Category: ${b.category}'),
             Text('Due: ${formatDate(b.dueDate)}'),

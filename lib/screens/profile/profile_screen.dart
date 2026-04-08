@@ -4,6 +4,7 @@ import '../../utils/prefs_service.dart';
 import '../../utils/helpers.dart';
 import '../../utils/locale_provider.dart';
 import '../../services/auth_service.dart';
+import '../../utils/app_colors.dart';
 import '../auth/auth_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -53,7 +54,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                   decoration: BoxDecoration(
-                    color: Colors.amber,
+                    color: AppColors.primaryAmber,
                     borderRadius: BorderRadius.circular(10),
                     border: Border.all(color: Colors.white, width: 2),
                   ),
@@ -72,18 +73,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(width: 8),
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(color: Colors.amber.shade100, borderRadius: BorderRadius.circular(6)),
+                  decoration: BoxDecoration(color: AppColors.amberBg, borderRadius: BorderRadius.circular(6)),
                   child: Row(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.admin_panel_settings, size: 14, color: Colors.amber.shade800),
+                    Icon(Icons.admin_panel_settings, size: 14, color: AppColors.primaryOrange),
                     const SizedBox(width: 2),
-                    Text('Admin', style: TextStyle(fontSize: 11, color: Colors.amber.shade800, fontWeight: FontWeight.bold)),
+                    Text('Admin', style: TextStyle(fontSize: 11, color: AppColors.primaryOrange, fontWeight: FontWeight.bold)),
                   ]),
                 ),
               ],
             ],
           )),
           Center(child: Text('Flat ${PrefsService.userFlat} • ${PrefsService.societyName}',
-              style: TextStyle(color: Colors.grey.shade600))),
+              style: TextStyle(color: AppColors.textSecondary))),
           const SizedBox(height: 24),
 
           _SectionHeader(locale.get('account')),
@@ -156,10 +157,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: OutlinedButton.icon(
               onPressed: () => _logout(context),
-              icon: const Icon(Icons.logout, color: Colors.red),
-              label: Text(locale.get('logout'), style: const TextStyle(color: Colors.red)),
+              icon: const Icon(Icons.logout, color: AppColors.statusError),
+              label: Text(locale.get('logout'), style: const TextStyle(color: AppColors.statusError)),
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Colors.red),
+                side: const BorderSide(color: AppColors.statusError),
                 padding: const EdgeInsets.symmetric(vertical: 14),
               ),
             ),
@@ -177,31 +178,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child: Text('Select Language', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            ),
-            ...AppLanguage.values.map((lang) => ListTile(
-              leading: Radio<AppLanguage>(
-                value: lang,
-                groupValue: locale.language,
-                onChanged: (v) {
-                  locale.setLanguage(v!);
+        child: RadioGroup<AppLanguage>(
+          groupValue: locale.language,
+          onChanged: (v) {
+            if (v == null) return;
+            locale.setLanguage(v);
+            Navigator.pop(ctx);
+          },
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('Select Language', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              ...AppLanguage.values.map((lang) => ListTile(
+                leading: Radio<AppLanguage>(
+                  value: lang,
+                ),
+                title: Text(languageNames[lang] ?? lang.name),
+                subtitle: Text(lang.name[0].toUpperCase() + lang.name.substring(1)),
+                onTap: () {
+                  locale.setLanguage(lang);
                   Navigator.pop(ctx);
                 },
-              ),
-              title: Text(languageNames[lang] ?? lang.name),
-              subtitle: Text(lang.name[0].toUpperCase() + lang.name.substring(1)),
-              onTap: () {
-                locale.setLanguage(lang);
-                Navigator.pop(ctx);
-              },
-            )),
-            const SizedBox(height: 8),
-          ],
+              )),
+              const SizedBox(height: 8),
+            ],
+          ),
         ),
       ),
     );
