@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import '../../utils/app_colors.dart';
+import '../../utils/app_spacing.dart';
+import '../../widgets/warm_card.dart';
 import '../notices/notices_screen.dart';
 import '../chat/chat_list_screen.dart';
 import '../events/events_screen.dart';
@@ -10,13 +13,12 @@ class CommunityScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final items = [
-      _CommunityItem(Icons.campaign_rounded, 'Notices', 'Announcements & updates', Colors.blue.shade700, const NoticesScreen()),
-      _CommunityItem(Icons.chat_rounded, 'Chat', 'Messages with residents', Colors.pink.shade600, const ChatListScreen()),
-      _CommunityItem(Icons.event_rounded, 'Events', 'Society events & RSVP', Colors.purple.shade600, const EventsScreen()),
-      _CommunityItem(Icons.poll_rounded, 'Polls', 'Vote on society decisions', Colors.indigo.shade600, const PollsScreen()),
-      _CommunityItem(Icons.people_rounded, 'Directory', 'Residents & contacts', Colors.teal.shade600, const DirectoryScreen()),
+      _CommunityItem('📢', 'Notices', 'Announcements & updates', AppColors.amberBg, AppColors.amberBorder, const NoticesScreen()),
+      _CommunityItem('💬', 'Chat', 'Messages with residents', AppColors.pinkBg, AppColors.pinkBorder, const ChatListScreen()),
+      _CommunityItem('📅', 'Events', 'Society events & RSVP', AppColors.purpleBg, AppColors.purpleBorder, const EventsScreen()),
+      _CommunityItem('🗳️', 'Polls', 'Vote on society decisions', AppColors.blueBg, AppColors.blueBorder, const PollsScreen()),
+      _CommunityItem('👥', 'Directory', 'Residents & contacts', AppColors.greenBg, AppColors.greenBorder, const DirectoryScreen()),
     ];
 
     return Scaffold(
@@ -25,48 +27,46 @@ class CommunityScreen extends StatelessWidget {
         automaticallyImplyLeading: false,
       ),
       body: ListView.builder(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(AppSpacing.lg),
         itemCount: items.length,
         itemBuilder: (_, i) {
           final item = items[i];
-          return Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            decoration: BoxDecoration(
-              color: Theme.of(context).cardColor,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, 2))],
-            ),
-            child: InkWell(
-              borderRadius: BorderRadius.circular(16),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => item.screen)),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 52, height: 52,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [item.color, item.color.withValues(alpha: 0.7)],
-                          begin: Alignment.topLeft, end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Icon(item.icon, color: Colors.white, size: 26),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(item.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                        const SizedBox(height: 2),
-                        Text(item.subtitle, style: TextStyle(fontSize: 13, color: Colors.grey.shade600)),
-                      ],
-                    )),
-                    Icon(Icons.chevron_right, color: Colors.grey.shade400),
-                  ],
+          return WarmCard(
+            margin: const EdgeInsets.only(bottom: AppSpacing.md),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => item.screen)),
+            child: Row(
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(
+                    color: item.bgColor,
+                    border: Border.all(color: item.borderColor, width: 1),
+                    borderRadius: BorderRadius.circular(AppSpacing.radiusIcon),
+                  ),
+                  child: Center(
+                    child: Text(item.emoji, style: const TextStyle(fontSize: 22)),
+                  ),
                 ),
-              ),
+                const SizedBox(width: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title,
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        item.subtitle,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: AppColors.textTertiary),
+              ],
             ),
           );
         },
@@ -76,10 +76,12 @@ class CommunityScreen extends StatelessWidget {
 }
 
 class _CommunityItem {
-  final IconData icon;
+  final String emoji;
   final String title;
   final String subtitle;
-  final Color color;
+  final Color bgColor;
+  final Color borderColor;
   final Widget screen;
-  const _CommunityItem(this.icon, this.title, this.subtitle, this.color, this.screen);
+
+  const _CommunityItem(this.emoji, this.title, this.subtitle, this.bgColor, this.borderColor, this.screen);
 }
