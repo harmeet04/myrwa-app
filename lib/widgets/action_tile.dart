@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_spacing.dart';
 
@@ -51,7 +52,10 @@ class ActionTile extends StatelessWidget {
             ...actions.map((a) => Padding(
               padding: const EdgeInsets.only(left: 4),
               child: GestureDetector(
-                onTap: a.onTap,
+                onTap: () {
+                  HapticFeedback.mediumImpact();
+                  a.onTap();
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                   decoration: BoxDecoration(color: a.color, borderRadius: BorderRadius.circular(8)),
