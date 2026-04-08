@@ -4,8 +4,14 @@ import '../../models/models.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
+import '../../utils/app_colors.dart';
+import '../../utils/app_spacing.dart';
 import '../../services/firestore_service.dart';
 import '../../services/ai_service.dart';
+import '../../widgets/filter_chip_bar.dart';
+import '../../widgets/warm_card.dart';
+import '../../widgets/empty_state.dart';
+import '../../widgets/shimmer_loader.dart';
 
 class NoticesScreen extends StatefulWidget {
   const NoticesScreen({super.key});
@@ -15,8 +21,10 @@ class NoticesScreen extends StatefulWidget {
 }
 
 class _NoticesScreenState extends State<NoticesScreen> {
-  String _filter = 'All';
-  final _categories = ['All', 'Announcement', 'AGM Minutes', 'Rules', 'Financial Report'];
+  int _filterIndex = 0;
+  final _categories = ['All', 'Announcement', 'AGM Minutes', 'Rules', 'Financial'];
+
+  String get _filter => _categories[_filterIndex];
 
   List<Notice> _applyFilter(List<Notice> notices) {
     var list = _filter == 'All' ? notices : notices.where((n) => n.category == _filter).toList();
@@ -30,143 +38,78 @@ class _NoticesScreenState extends State<NoticesScreen> {
 
   bool _isNew(Notice n) => DateTime.now().difference(n.date).inDays < 3;
 
+  // Returns pastel bg + border colors per category
+  (Color bg, Color border) _categoryColors(String category) {
+    switch (category.toLowerCase()) {
+      case 'announcement':
+        return (AppColors.amberBg, AppColors.amberBorder);
+      case 'agm minutes':
+        return (AppColors.blueBg, AppColors.blueBorder);
+      case 'rules':
+        return (AppColors.purpleBg, AppColors.purpleBorder);
+      case 'financial' || 'financial report':
+        return (AppColors.greenBg, AppColors.greenBorder);
+      default:
+        return (AppColors.amberBg, AppColors.amberBorder);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     final society = PrefsService.societyName;
     return Scaffold(
-      appBar: AppBar(title: const Text('Notice Board')),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddNotice(context),
-        child: const Icon(Icons.add),
+      backgroundColor: AppColors.scaffoldLight,
+      appBar: AppBar(
+        backgroundColor: AppColors.scaffoldLight,
+        title: const Text('Notice Board'),
+        elevation: 0,
       ),
+      floatingActionButton: PrefsService.isAdmin
+          ? _buildFab()
+          : null,
       body: Column(
         children: [
-          SizedBox(
-            height: 48,
-            child: ListView.builder(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              itemCount: _categories.length,
-              itemBuilder: (_, i) => Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: FilterChip(
-                  label: Text(_categories[i]),
-                  selected: _filter == _categories[i],
-                  onSelected: (_) => setState(() => _filter = _categories[i]),
-                ),
-              ),
-            ),
+          const SizedBox(height: AppSpacing.sm),
+          FilterChipBar(
+            options: _categories,
+            selectedIndex: _filterIndex,
+            onSelected: (i) => setState(() => _filterIndex = i),
           ),
+          const SizedBox(height: AppSpacing.sm),
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirestoreService.noticesStream(society),
               builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const ShimmerLoader(itemCount: 4);
+                }
                 List<Notice> allNotices;
                 if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-                  allNotices = snapshot.data!.docs.map((d) => FirestoreService.noticeFromDoc(d)).toList();
-                } else if (snapshot.connectionState == ConnectionState.waiting) {
-                  return const Center(child: CircularProgressIndicator());
+                  allNotices = snapshot.data!.docs
+                      .map((d) => FirestoreService.noticeFromDoc(d))
+                      .toList();
                 } else {
-                  // Fallback to mock data if Firestore is empty
                   allNotices = MockData.notices;
                 }
                 final filtered = _applyFilter(allNotices);
                 if (filtered.isEmpty) {
-                  return Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    Icon(Icons.campaign_outlined, size: 72, color: Colors.grey.shade300),
-                    const SizedBox(height: 12),
-                    Text('No notices yet', style: TextStyle(fontSize: 16, color: Colors.grey.shade500)),
-                  ]));
+                  return const EmptyState(
+                    emoji: '📭',
+                    title: 'No notices yet',
+                    subtitle: 'Check back later for community announcements.',
+                  );
                 }
                 return ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 80),
-                      itemCount: filtered.length,
-                      itemBuilder: (_, i) {
-                        final n = filtered[i];
-                        return Card(
-                          child: InkWell(
-                            borderRadius: BorderRadius.circular(16),
-                            onTap: () => _showDetail(context, n),
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(children: [
-                                    if (n.isPinned) Padding(
-                                      padding: const EdgeInsets.only(right: 6),
-                                      child: Icon(Icons.push_pin, size: 16, color: cs.primary),
-                                    ),
-                                    Expanded(child: Text(n.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
-                                    if (_isNew(n)) Container(
-                                      margin: const EdgeInsets.only(right: 6),
-                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                      decoration: BoxDecoration(color: Colors.red, borderRadius: BorderRadius.circular(4)),
-                                      child: const Text('NEW', style: TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.white)),
-                                    ),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                      decoration: BoxDecoration(color: cs.primaryContainer, borderRadius: BorderRadius.circular(12)),
-                                      child: Text(n.category, style: TextStyle(fontSize: 11, color: cs.onPrimaryContainer)),
-                                    ),
-                                  ]),
-                                  const SizedBox(height: 8),
-                                  Text(n.body, maxLines: 2, overflow: TextOverflow.ellipsis, style: TextStyle(color: Colors.grey.shade600)),
-                                  if (n.attachmentName != null) ...[
-                                    const SizedBox(height: 8),
-                                    Row(children: [
-                                      Icon(Icons.attach_file, size: 14, color: cs.primary),
-                                      const SizedBox(width: 4),
-                                      Text(n.attachmentName!, style: TextStyle(fontSize: 12, color: cs.primary, fontWeight: FontWeight.w500)),
-                                    ]),
-                                  ],
-                                  const SizedBox(height: 12),
-                                  Row(children: [
-                                    CircleAvatar(radius: 12, backgroundColor: cs.primaryContainer,
-                                      child: Text(n.author[0], style: TextStyle(fontSize: 12, color: cs.primary))),
-                                    const SizedBox(width: 8),
-                                    Text('${n.author} • ${n.authorFlat}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500)),
-                                    const Spacer(),
-                                    // Share button
-                                    InkWell(
-                                      onTap: () => showSnack(context, 'Shared: ${n.title}'),
-                                      child: Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 4),
-                                        child: Icon(Icons.share, size: 16, color: Colors.grey.shade500),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    if (PrefsService.isAdmin) InkWell(
-                                      onTap: () {
-                                        FirestoreService.updateNotice(n.id, {'isPinned': !n.isPinned});
-                                      },
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(right: 8),
-                                        child: Icon(n.isPinned ? Icons.push_pin : Icons.push_pin_outlined, size: 16,
-                                          color: n.isPinned ? cs.primary : Colors.grey),
-                                      ),
-                                    ),
-                                    Text(timeAgo(n.date), style: TextStyle(fontSize: 12, color: Colors.grey.shade500)),
-                                    const SizedBox(width: 12),
-                                    InkWell(
-                                      onTap: () {
-                                        FirestoreService.updateNotice(n.id, {'likes': n.likes + 1});
-                                      },
-                                      child: Row(children: [
-                                        Icon(Icons.favorite_border, size: 16, color: Colors.red.shade300),
-                                        const SizedBox(width: 4),
-                                        Text('${n.likes}', style: const TextStyle(fontSize: 12)),
-                                      ]),
-                                    ),
-                                  ]),
-                                ],
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    );
+                  padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg, 0, AppSpacing.lg, 100),
+                  itemCount: filtered.length,
+                  itemBuilder: (_, i) => _NoticeCard(
+                    notice: filtered[i],
+                    isNew: _isNew(filtered[i]),
+                    categoryColors: _categoryColors(filtered[i].category),
+                    onTap: () => _showDetail(context, filtered[i]),
+                  ),
+                );
               },
             ),
           ),
@@ -175,82 +118,48 @@ class _NoticesScreenState extends State<NoticesScreen> {
     );
   }
 
+  Widget _buildFab() {
+    return Container(
+      decoration: BoxDecoration(
+        gradient: AppColors.primaryGradient,
+        borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
+        boxShadow: AppColors.fabShadow,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
+          onTap: () => _showAddNotice(context),
+          child: const Padding(
+            padding: EdgeInsets.symmetric(
+                horizontal: AppSpacing.xl, vertical: AppSpacing.md),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('➕', style: TextStyle(fontSize: 16)),
+                SizedBox(width: AppSpacing.sm),
+                Text(
+                  'Add Notice',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
   void _showDetail(BuildContext context, Notice n) {
-    final cs = Theme.of(context).colorScheme;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => DraggableScrollableSheet(
-        expand: false,
-        initialChildSize: 0.6,
-        maxChildSize: 0.9,
-        builder: (_, ctrl) => ListView(
-          controller: ctrl,
-          padding: const EdgeInsets.all(20),
-          children: [
-            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: Colors.grey.shade300, borderRadius: BorderRadius.circular(2)))),
-            const SizedBox(height: 16),
-            Row(children: [
-              Expanded(child: Text(n.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
-              if (n.isPinned) Icon(Icons.push_pin, color: cs.primary, size: 20),
-            ]),
-            const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(color: cs.primaryContainer, borderRadius: BorderRadius.circular(8)),
-              child: Text(n.category, style: TextStyle(fontSize: 12, color: cs.onPrimaryContainer)),
-            ),
-            const SizedBox(height: 8),
-            Row(children: [
-              Icon(Icons.person, size: 16, color: Colors.grey.shade600),
-              const SizedBox(width: 4),
-              Text('${n.author} • ${n.authorFlat}', style: TextStyle(color: Colors.grey.shade600)),
-              const Spacer(),
-              Text(formatDate(n.date), style: TextStyle(color: Colors.grey.shade500)),
-            ]),
-            const SizedBox(height: 16),
-            Text(n.body, style: const TextStyle(fontSize: 15, height: 1.5)),
-            if (n.attachmentName != null) ...[
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: Row(children: [
-                  Icon(Icons.description, color: cs.primary),
-                  const SizedBox(width: 8),
-                  Expanded(child: Text(n.attachmentName!, style: const TextStyle(fontWeight: FontWeight.w500))),
-                  OutlinedButton.icon(
-                    onPressed: () => showSnack(context, 'Download: ${n.attachmentName}'),
-                    icon: const Icon(Icons.download, size: 16),
-                    label: const Text('Download'),
-                    style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
-                  ),
-                ]),
-              ),
-            ],
-            const SizedBox(height: 20),
-            Row(children: [
-              Icon(Icons.favorite, color: Colors.red.shade300),
-              const SizedBox(width: 4),
-              Text('${n.likes} likes'),
-              const SizedBox(width: 16),
-              Icon(Icons.comment, color: Colors.grey.shade500),
-              const SizedBox(width: 4),
-              Text('${n.comments.length} comments'),
-              const Spacer(),
-              IconButton(
-                icon: Icon(Icons.share, color: Colors.grey.shade600),
-                onPressed: () => showSnack(context, 'Shared: ${n.title}'),
-              ),
-            ]),
-          ],
-        ),
-      ),
+      backgroundColor: Colors.transparent,
+      builder: (_) => _NoticeDetailSheet(notice: n),
     );
   }
 
@@ -263,141 +172,594 @@ class _NoticesScreenState extends State<NoticesScreen> {
     bool isPolishing = false;
     bool isTranslating = false;
     String? hindiText;
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      backgroundColor: Colors.transparent,
       builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setBS) => Padding(
-          padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
+        builder: (ctx, setBS) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(
+                top: Radius.circular(AppSpacing.radiusModal)),
+          ),
+          padding: EdgeInsets.fromLTRB(
+              AppSpacing.xl,
+              AppSpacing.xl,
+              AppSpacing.xl,
+              MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.xl),
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Text('Post Notice', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                TextField(controller: titleCtrl, decoration: const InputDecoration(labelText: 'Title')),
-                const SizedBox(height: 12),
-                TextField(controller: bodyCtrl, maxLines: 4, decoration: const InputDecoration(labelText: 'Description')),
-                const SizedBox(height: 8),
-                // AI Polish + Hindi Translation row
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: AppColors.cardBorder,
+                        borderRadius: BorderRadius.circular(2)),
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                const Text(
+                  'Post Notice',
+                  style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                TextField(
+                    controller: titleCtrl,
+                    decoration: const InputDecoration(labelText: 'Title')),
+                const SizedBox(height: AppSpacing.md),
+                TextField(
+                    controller: bodyCtrl,
+                    maxLines: 4,
+                    decoration:
+                        const InputDecoration(labelText: 'Description')),
+                const SizedBox(height: AppSpacing.sm),
                 Row(
                   children: [
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: isPolishing ? null : () async {
-                          if (bodyCtrl.text.trim().isEmpty) return;
-                          setBS(() => isPolishing = true);
-                          try {
-                            final polished = await AiService.polishAnnouncement(bodyCtrl.text);
-                            setBS(() { bodyCtrl.text = polished; isPolishing = false; });
-                          } catch (_) {
-                            setBS(() => isPolishing = false);
-                          }
-                        },
+                        onPressed: isPolishing
+                            ? null
+                            : () async {
+                                if (bodyCtrl.text.trim().isEmpty) return;
+                                setBS(() => isPolishing = true);
+                                try {
+                                  final polished =
+                                      await AiService.polishAnnouncement(
+                                          bodyCtrl.text);
+                                  setBS(() {
+                                    bodyCtrl.text = polished;
+                                    isPolishing = false;
+                                  });
+                                } catch (_) {
+                                  setBS(() => isPolishing = false);
+                                }
+                              },
                         icon: isPolishing
-                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                            : const Text('✨', style: TextStyle(fontSize: 14)),
-                        label: Text(isPolishing ? 'Polishing...' : 'AI Polish', style: const TextStyle(fontSize: 12)),
-                        style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.primaryAmber))
+                            : const Text('✨',
+                                style: TextStyle(fontSize: 14)),
+                        label: Text(
+                            isPolishing ? 'Polishing...' : 'AI Polish',
+                            style: const TextStyle(fontSize: 12)),
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          foregroundColor: AppColors.primaryAmber,
+                          side: const BorderSide(
+                              color: AppColors.amberBorder),
+                          backgroundColor: AppColors.amberBg,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppSpacing.sm),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: isTranslating ? null : () async {
-                          if (bodyCtrl.text.trim().isEmpty) return;
-                          setBS(() => isTranslating = true);
-                          try {
-                            final hindi = await AiService.translateToHindi(bodyCtrl.text);
-                            setBS(() { hindiText = hindi; isTranslating = false; });
-                          } catch (_) {
-                            setBS(() => isTranslating = false);
-                          }
-                        },
+                        onPressed: isTranslating
+                            ? null
+                            : () async {
+                                if (bodyCtrl.text.trim().isEmpty) return;
+                                setBS(() => isTranslating = true);
+                                try {
+                                  final hindi =
+                                      await AiService.translateToHindi(
+                                          bodyCtrl.text);
+                                  setBS(() {
+                                    hindiText = hindi;
+                                    isTranslating = false;
+                                  });
+                                } catch (_) {
+                                  setBS(() => isTranslating = false);
+                                }
+                              },
                         icon: isTranslating
-                            ? const SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2))
-                            : const Text('🇮🇳', style: TextStyle(fontSize: 14)),
-                        label: Text(isTranslating ? 'Translating...' : 'Hindi', style: const TextStyle(fontSize: 12)),
-                        style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
+                            ? const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: AppColors.primaryAmber))
+                            : const Text('🇮🇳',
+                                style: TextStyle(fontSize: 14)),
+                        label: Text(
+                            isTranslating ? 'Translating...' : 'Hindi',
+                            style: const TextStyle(fontSize: 12)),
+                        style: OutlinedButton.styleFrom(
+                          visualDensity: VisualDensity.compact,
+                          foregroundColor: AppColors.primaryAmber,
+                          side: const BorderSide(
+                              color: AppColors.amberBorder),
+                          backgroundColor: AppColors.amberBg,
+                        ),
                       ),
                     ),
                   ],
                 ),
                 if (hindiText != null) ...[
-                  const SizedBox(height: 8),
+                  const SizedBox(height: AppSpacing.sm),
                   Container(
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(AppSpacing.md),
                     decoration: BoxDecoration(
-                      color: Colors.orange.shade50,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.orange.shade200),
+                      color: AppColors.amberBg,
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.radiusCard),
+                      border:
+                          Border.all(color: AppColors.amberBorder),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Text('हिंदी अनुवाद', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: Colors.orange.shade800)),
+                            const Text(
+                              'हिंदी अनुवाद',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: AppColors.textOnPrimary),
+                            ),
                             const Spacer(),
                             InkWell(
                               onTap: () => setBS(() => hindiText = null),
-                              child: Icon(Icons.close, size: 16, color: Colors.grey.shade500),
+                              child: const Icon(Icons.close,
+                                  size: 16,
+                                  color: AppColors.textTertiary),
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6),
-                        Text(hindiText!, style: const TextStyle(fontSize: 14)),
+                        const SizedBox(height: AppSpacing.xs),
+                        Text(hindiText!,
+                            style: const TextStyle(
+                                fontSize: 14,
+                                color: AppColors.textPrimary)),
                       ],
                     ),
                   ),
                 ],
-                const SizedBox(height: 12),
+                const SizedBox(height: AppSpacing.md),
                 DropdownButtonFormField<String>(
-                  value: category,
-                  decoration: const InputDecoration(labelText: 'Category'),
-                  items: _categories.where((c) => c != 'All').map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                  initialValue: category,
+                  decoration:
+                      const InputDecoration(labelText: 'Category'),
+                  items: _categories
+                      .where((c) => c != 'All')
+                      .map((c) => DropdownMenuItem(
+                          value: c, child: Text(c)))
+                      .toList(),
                   onChanged: (v) => setBS(() => category = v!),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: AppSpacing.sm),
                 OutlinedButton.icon(
-                  onPressed: () => setBS(() => attachmentName = attachmentName == null ? 'Document_${DateTime.now().millisecondsSinceEpoch}.pdf' : null),
-                  icon: Icon(attachmentName != null ? Icons.check_circle : Icons.attach_file),
+                  onPressed: () => setBS(() => attachmentName =
+                      attachmentName == null
+                          ? 'Document_${DateTime.now().millisecondsSinceEpoch}.pdf'
+                          : null),
+                  icon: Icon(attachmentName != null
+                      ? Icons.check_circle
+                      : Icons.attach_file),
                   label: Text(attachmentName ?? 'Attach Document'),
-                  style: OutlinedButton.styleFrom(foregroundColor: attachmentName != null ? Colors.green : null),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: attachmentName != null
+                        ? AppColors.statusSuccess
+                        : AppColors.textSecondary,
+                  ),
                 ),
-                if (PrefsService.isAdmin) CheckboxListTile(
-                  title: const Text('Pin this notice'),
-                  value: pin,
-                  onChanged: (v) => setBS(() => pin = v!),
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                ),
-                const SizedBox(height: 8),
-                FilledButton(
-                  onPressed: () async {
-                    if (titleCtrl.text.isNotEmpty && bodyCtrl.text.isNotEmpty) {
-                      final fullBody = hindiText != null
-                          ? '${bodyCtrl.text}\n\n---\n\n$hindiText'
-                          : bodyCtrl.text;
-                      await FirestoreService.addNotice(Notice(
-                        id: '',
-                        title: titleCtrl.text, body: fullBody,
-                        author: PrefsService.userName.isEmpty ? 'You' : PrefsService.userName,
-                        authorFlat: PrefsService.userFlat.isEmpty ? 'A-101' : PrefsService.userFlat,
-                        date: DateTime.now(), category: category, isPinned: pin, attachmentName: attachmentName,
-                      ));
-                      if (!context.mounted) return;
-                      Navigator.pop(ctx);
-                      showSnack(context, '✅ Notice posted!');
-                    }
-                  },
-                  child: const Text('Post'),
+                if (PrefsService.isAdmin)
+                  CheckboxListTile(
+                    title: const Text('Pin this notice'),
+                    value: pin,
+                    onChanged: (v) => setBS(() => pin = v!),
+                    contentPadding: EdgeInsets.zero,
+                    controlAffinity: ListTileControlAffinity.leading,
+                    activeColor: AppColors.primaryAmber,
+                  ),
+                const SizedBox(height: AppSpacing.sm),
+                Container(
+                  decoration: BoxDecoration(
+                    gradient: AppColors.primaryGradient,
+                    borderRadius:
+                        BorderRadius.circular(AppSpacing.radiusButton),
+                  ),
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.radiusButton),
+                      onTap: () async {
+                        if (titleCtrl.text.isNotEmpty &&
+                            bodyCtrl.text.isNotEmpty) {
+                          final fullBody = hindiText != null
+                              ? '${bodyCtrl.text}\n\n---\n\n$hindiText'
+                              : bodyCtrl.text;
+                          await FirestoreService.addNotice(Notice(
+                            id: '',
+                            title: titleCtrl.text,
+                            body: fullBody,
+                            author: PrefsService.userName.isEmpty
+                                ? 'You'
+                                : PrefsService.userName,
+                            authorFlat: PrefsService.userFlat.isEmpty
+                                ? 'A-101'
+                                : PrefsService.userFlat,
+                            date: DateTime.now(),
+                            category: category,
+                            isPinned: pin,
+                            attachmentName: attachmentName,
+                          ));
+                          if (!context.mounted) return;
+                          Navigator.pop(ctx);
+                          showSnack(context, '✅ Notice posted!');
+                        }
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 14),
+                        child: Center(
+                          child: Text(
+                            'Post',
+                            style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.white),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Notice Card ────────────────────────────────────────────────────────────────
+
+class _NoticeCard extends StatelessWidget {
+  final Notice notice;
+  final bool isNew;
+  final (Color bg, Color border) categoryColors;
+  final VoidCallback onTap;
+
+  const _NoticeCard({
+    required this.notice,
+    required this.isNew,
+    required this.categoryColors,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final (catBg, catBorder) = categoryColors;
+    return WarmCard(
+      onTap: onTap,
+      child: Stack(
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Row 1: category chip + spacer + time/NEW badge
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: catBg,
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.radiusChip),
+                      border: Border.all(color: catBorder, width: 0.5),
+                    ),
+                    child: Text(
+                      notice.category,
+                      style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.textOnPrimary),
+                    ),
+                  ),
+                  const Spacer(),
+                  if (isNew) ...[
+                    Container(
+                      margin: const EdgeInsets.only(right: 6),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.amberBg,
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                            color: AppColors.amberBorder, width: 0.5),
+                      ),
+                      child: const Text(
+                        'NEW',
+                        style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textOnPrimary),
+                      ),
+                    ),
+                  ],
+                  Text(
+                    timeAgo(notice.date),
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.textTertiary),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              // Title
+              Text(
+                notice.title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              // Body preview
+              Text(
+                notice.body,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    fontSize: 12, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              // Bottom row: likes + comments
+              Row(
+                children: [
+                  InkWell(
+                    onTap: () => FirestoreService.updateNotice(
+                        notice.id, {'likes': notice.likes + 1}),
+                    borderRadius: BorderRadius.circular(4),
+                    child: Row(
+                      children: [
+                        const Text('❤️', style: TextStyle(fontSize: 13)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${notice.likes}',
+                          style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textTertiary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  const Text('💬', style: TextStyle(fontSize: 13)),
+                  const SizedBox(width: 4),
+                  Text(
+                    '${notice.comments.length}',
+                    style: const TextStyle(
+                        fontSize: 11, color: AppColors.textTertiary),
+                  ),
+                  const Spacer(),
+                  if (PrefsService.isAdmin)
+                    InkWell(
+                      onTap: () => FirestoreService.updateNotice(
+                          notice.id, {'isPinned': !notice.isPinned}),
+                      borderRadius: BorderRadius.circular(4),
+                      child: Padding(
+                        padding: const EdgeInsets.all(4),
+                        child: Icon(
+                          notice.isPinned
+                              ? Icons.push_pin
+                              : Icons.push_pin_outlined,
+                          size: 15,
+                          color: notice.isPinned
+                              ? AppColors.primaryAmber
+                              : AppColors.textTertiary,
+                        ),
+                      ),
+                    ),
+                  InkWell(
+                    onTap: () => showSnack(context, 'Shared: ${notice.title}'),
+                    borderRadius: BorderRadius.circular(4),
+                    child: Padding(
+                      padding: const EdgeInsets.all(4),
+                      child: Icon(Icons.share,
+                          size: 15, color: AppColors.textTertiary),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          // Pin icon top-left overlay
+          if (notice.isPinned)
+            const Positioned(
+              top: 0,
+              left: 0,
+              child: Text('📌', style: TextStyle(fontSize: 14)),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Detail Sheet ───────────────────────────────────────────────────────────────
+
+class _NoticeDetailSheet extends StatelessWidget {
+  final Notice notice;
+  const _NoticeDetailSheet({required this.notice});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.vertical(
+            top: Radius.circular(AppSpacing.radiusModal)),
+      ),
+      child: DraggableScrollableSheet(
+        expand: false,
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        builder: (_, ctrl) => ListView(
+          controller: ctrl,
+          padding: const EdgeInsets.all(AppSpacing.xl),
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                    color: AppColors.cardBorder,
+                    borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.lg),
+            Row(children: [
+              Expanded(
+                child: Text(
+                  notice.title,
+                  style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary),
+                ),
+              ),
+              if (notice.isPinned)
+                const Padding(
+                  padding: EdgeInsets.only(left: 8),
+                  child:
+                      Text('📌', style: TextStyle(fontSize: 18)),
+                ),
+            ]),
+            const SizedBox(height: AppSpacing.xs),
+            Container(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.amberBg,
+                borderRadius:
+                    BorderRadius.circular(AppSpacing.radiusChip),
+                border: Border.all(color: AppColors.amberBorder, width: 0.5),
+              ),
+              child: Text(
+                notice.category,
+                style: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.textOnPrimary),
+              ),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+            Row(children: [
+              const Icon(Icons.person, size: 16, color: AppColors.textSecondary),
+              const SizedBox(width: 4),
+              Text(
+                '${notice.author} • ${notice.authorFlat}',
+                style: const TextStyle(color: AppColors.textSecondary),
+              ),
+              const Spacer(),
+              Text(
+                formatDate(notice.date),
+                style: const TextStyle(color: AppColors.textTertiary),
+              ),
+            ]),
+            const SizedBox(height: AppSpacing.lg),
+            Text(
+              notice.body,
+              style: const TextStyle(
+                  fontSize: 15,
+                  height: 1.5,
+                  color: AppColors.textPrimary),
+            ),
+            if (notice.attachmentName != null) ...[
+              const SizedBox(height: AppSpacing.lg),
+              Container(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                decoration: BoxDecoration(
+                  color: AppColors.scaffoldLight,
+                  borderRadius:
+                      BorderRadius.circular(AppSpacing.radiusCard),
+                  border: Border.all(
+                      color: AppColors.cardBorder, width: 0.5),
+                ),
+                child: Row(children: [
+                  const Icon(Icons.description,
+                      color: AppColors.primaryAmber),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      notice.attachmentName!,
+                      style: const TextStyle(
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textPrimary),
+                    ),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () =>
+                        showSnack(context, 'Download: ${notice.attachmentName}'),
+                    icon: const Icon(Icons.download, size: 16),
+                    label: const Text('Download'),
+                    style: OutlinedButton.styleFrom(
+                      visualDensity: VisualDensity.compact,
+                      foregroundColor: AppColors.primaryAmber,
+                      side: const BorderSide(color: AppColors.amberBorder),
+                    ),
+                  ),
+                ]),
+              ),
+            ],
+            const SizedBox(height: AppSpacing.xl),
+            Row(children: [
+              const Text('❤️', style: TextStyle(fontSize: 16)),
+              const SizedBox(width: 4),
+              Text('${notice.likes} likes',
+                  style: const TextStyle(color: AppColors.textSecondary)),
+              const SizedBox(width: AppSpacing.lg),
+              const Text('💬', style: TextStyle(fontSize: 16)),
+              const SizedBox(width: 4),
+              Text('${notice.comments.length} comments',
+                  style: const TextStyle(color: AppColors.textSecondary)),
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.share,
+                    color: AppColors.textSecondary),
+                onPressed: () =>
+                    showSnack(context, 'Shared: ${notice.title}'),
+              ),
+            ]),
+          ],
         ),
       ),
     );
