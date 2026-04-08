@@ -47,10 +47,13 @@ class _EventsScreenState extends State<EventsScreen> {
     final cs = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(title: const Text('Events / कार्यक्रम')),
-      body: ListView.builder(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        itemCount: _events.length,
-        itemBuilder: (_, i) {
+      body: RefreshIndicator(
+        color: AppColors.primaryAmber,
+        onRefresh: () async => setState(() {}),
+        child: ListView.builder(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          itemCount: _events.length,
+          itemBuilder: (_, i) {
           final e = _events[i];
           final spotsLeft = e.maxCapacity - e.rsvpCount;
           return Card(
@@ -127,6 +130,7 @@ class _EventsScreenState extends State<EventsScreen> {
             ),
           );
         },
+        ),
       ),
     );
   }

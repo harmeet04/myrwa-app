@@ -111,7 +111,10 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                   ]));
                 }
 
-                return ListView.builder(
+                return RefreshIndicator(
+                  color: AppColors.primaryAmber,
+                  onRefresh: () async => await Future.delayed(const Duration(milliseconds: 500)),
+                  child: ListView.builder(
                   padding: const EdgeInsets.only(bottom: 80),
                   itemCount: filtered.length,
                   itemBuilder: (context, i) {
@@ -153,6 +156,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                       ),
                     );
                   },
+                  ),
                 );
               },
             ),

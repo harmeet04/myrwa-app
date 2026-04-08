@@ -96,25 +96,29 @@ class _PackagesScreenState extends State<PackagesScreen> with SingleTickerProvid
         ]),
       );
     }
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: items.length,
-      itemBuilder: (_, i) {
-        final p = items[i];
-        return _PackageCard(
-          package: p,
-          onCollect: isCollected ? null : () async {
-            if (p.id != null) {
-              await FirestoreService.updateDoc('packages', p.id!, {
-                'isCollected': true,
-                'collectedAt': Timestamp.fromDate(DateTime.now()),
-              });
-            }
-            if (mounted) showSnack(context, '✅ Package from ${p.courierName} marked as collected!');
-          },
-          onTap: () => _showDetail(p),
-        );
-      },
+    return RefreshIndicator(
+      color: AppColors.primaryAmber,
+      onRefresh: () async => await Future.delayed(const Duration(milliseconds: 500)),
+      child: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: items.length,
+        itemBuilder: (_, i) {
+          final p = items[i];
+          return _PackageCard(
+            package: p,
+            onCollect: isCollected ? null : () async {
+              if (p.id != null) {
+                await FirestoreService.updateDoc('packages', p.id!, {
+                  'isCollected': true,
+                  'collectedAt': Timestamp.fromDate(DateTime.now()),
+                });
+              }
+              if (mounted) showSnack(context, '✅ Package from ${p.courierName} marked as collected!');
+            },
+            onTap: () => _showDetail(p),
+          );
+        },
+      ),
     );
   }
 

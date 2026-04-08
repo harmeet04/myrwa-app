@@ -52,7 +52,10 @@ class _GateLogScreenState extends State<GateLogScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [Icon(Icons.door_sliding, size: 64, color: Colors.grey), SizedBox(height: 8), Text('No entries found')],
             ))
-          : ListView.builder(
+          : RefreshIndicator(
+              color: AppColors.primaryAmber,
+              onRefresh: () async => setState(() {}),
+              child: ListView.builder(
               padding: const EdgeInsets.symmetric(vertical: 8),
               itemCount: _filtered.length,
               itemBuilder: (_, i) {
@@ -148,6 +151,7 @@ class _GateLogScreenState extends State<GateLogScreen> {
                   ),
                 );
               },
+              ),
             ),
     );
   }

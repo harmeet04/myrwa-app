@@ -58,7 +58,10 @@ class _StaffScreenState extends State<StaffScreen> {
             ]));
           }
 
-          return ListView.builder(
+          return RefreshIndicator(
+            color: AppColors.primaryAmber,
+            onRefresh: () async => await Future.delayed(const Duration(milliseconds: 500)),
+            child: ListView.builder(
             padding: const EdgeInsets.only(bottom: 80),
             itemCount: staffList.length,
             itemBuilder: (context, i) {
@@ -136,6 +139,7 @@ class _StaffScreenState extends State<StaffScreen> {
                 ),
               );
             },
+            ),
           );
         },
       ),
