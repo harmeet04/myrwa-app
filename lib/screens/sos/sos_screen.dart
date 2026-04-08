@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
+import '../../services/analytics_service.dart';
 import '../../utils/app_colors.dart';
 
 class SosScreen extends StatefulWidget {
@@ -187,7 +189,9 @@ class _SosScreenState extends State<SosScreen> with SingleTickerProviderStateMix
   }
 
   void _triggerSos() async {
+    HapticFeedback.heavyImpact();
     setState(() => _alertSent = true);
+    AnalyticsService.logSosTriggered();
     await FirestoreService.sendSosAlert('SOS');
     if (!mounted) return;
     showDialog(

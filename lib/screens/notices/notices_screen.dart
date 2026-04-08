@@ -12,6 +12,7 @@ import '../../widgets/filter_chip_bar.dart';
 import '../../widgets/warm_card.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loader.dart';
+import '../../services/analytics_service.dart';
 
 class NoticesScreen extends StatefulWidget {
   const NoticesScreen({super.key});
@@ -418,6 +419,7 @@ class _NoticesScreenState extends State<NoticesScreen> {
                             isPinned: pin,
                             attachmentName: attachmentName,
                           ));
+                          AnalyticsService.logNoticeCreated();
                           if (!context.mounted) return;
                           Navigator.pop(ctx);
                           showSnack(context, '✅ Notice posted!');

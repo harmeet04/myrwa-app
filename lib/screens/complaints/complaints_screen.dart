@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import '../../models/models.dart';
@@ -16,6 +17,7 @@ import '../../widgets/priority_badge.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loader.dart';
 import '../chat/chat_screen.dart';
+import '../../services/analytics_service.dart';
 
 class ComplaintsScreen extends StatefulWidget {
   const ComplaintsScreen({super.key});
@@ -469,6 +471,7 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
                   FilledButton(
                     onPressed: () async {
                       if (titleCtrl.text.isNotEmpty && descCtrl.text.isNotEmpty) {
+                        HapticFeedback.mediumImpact();
                         await FirestoreService.addComplaint(Complaint(
                           id: '',
                           title: titleCtrl.text, description: descCtrl.text,
@@ -477,6 +480,7 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
                           flat: PrefsService.userFlat.isEmpty ? 'A-101' : PrefsService.userFlat,
                           date: DateTime.now(), hasPhoto: addPhoto,
                         ));
+                        AnalyticsService.logComplaintCreated(category);
                         if (!context.mounted) return;
                         Navigator.pop(ctx);
                         showSnack(context, '\u2705 Complaint raised successfully!${aiApplied ? ' (AI categorized)' : ''}');

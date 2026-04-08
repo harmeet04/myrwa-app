@@ -3,6 +3,7 @@ import '../../models/models.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
 import '../../utils/app_colors.dart';
+import '../../services/analytics_service.dart';
 
 class BillsScreen extends StatefulWidget {
   const BillsScreen({super.key});
@@ -99,60 +100,64 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
         ],
       ));
     }
-    return ListView.builder(
-      padding: const EdgeInsets.only(bottom: 16),
-      itemCount: bills.length,
-      itemBuilder: (_, i) {
-        final b = bills[i];
-        return Card(
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: () => _showBillDetail(context, b),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: _billColor(b).withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(categoryIcon(b.category), color: _billColor(b)),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(b.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                      const SizedBox(height: 4),
-                      Text(b.status == BillStatus.paid
-                          ? 'Paid on ${formatDate(b.paidDate!)}'
-                          : 'Due: ${formatDate(b.dueDate)}',
-                          style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                    ],
-                  )),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(formatCurrency(b.amount), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: _billColor(b))),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: _billColor(b).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(b.status.name.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _billColor(b))),
+    return RefreshIndicator(
+      color: AppColors.primaryAmber,
+      onRefresh: () async => setState(() {}),
+      child: ListView.builder(
+        padding: const EdgeInsets.only(bottom: 16),
+        itemCount: bills.length,
+        itemBuilder: (_, i) {
+          final b = bills[i];
+          return Card(
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => _showBillDetail(context, b),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: _billColor(b).withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
                       ),
-                    ],
-                  ),
-                ],
+                      child: Icon(categoryIcon(b.category), color: _billColor(b)),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(b.title, style: const TextStyle(fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 4),
+                        Text(b.status == BillStatus.paid
+                            ? 'Paid on ${formatDate(b.paidDate!)}'
+                            : 'Due: ${formatDate(b.dueDate)}',
+                            style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                      ],
+                    )),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(formatCurrency(b.amount), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: _billColor(b))),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: _billColor(b).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(b.status.name.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _billColor(b))),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 
@@ -190,6 +195,7 @@ class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStat
                   b.status = BillStatus.paid;
                   b.paidDate = DateTime.now();
                 });
+                AnalyticsService.logBillPaid(b.amount.toDouble());
                 Navigator.pop(context);
                 showSnack(context, 'Payment successful!');
               },

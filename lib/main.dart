@@ -6,6 +6,7 @@ import 'utils/theme.dart';
 import 'utils/prefs_service.dart';
 import 'utils/locale_provider.dart';
 import 'screens/splash/splash_screen.dart';
+import 'services/analytics_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,6 +63,7 @@ class _MyAppState extends State<MyApp> {
           child: child!,
         );
       },
+      navigatorObservers: [AnalyticsService.observer],
       home: SplashScreen(onThemeToggle: _onSettingsChanged),
     );
   }

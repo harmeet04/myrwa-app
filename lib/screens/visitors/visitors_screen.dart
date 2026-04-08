@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../models/models.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
@@ -8,6 +9,7 @@ import '../../widgets/filter_chip_bar.dart';
 import '../../widgets/warm_card.dart';
 import '../../widgets/status_chip.dart';
 import '../../widgets/empty_state.dart';
+import '../../services/analytics_service.dart';
 
 class VisitorsScreen extends StatefulWidget {
   const VisitorsScreen({super.key});
@@ -69,16 +71,20 @@ class _VisitorsScreenState extends State<VisitorsScreen> {
                     title: 'No visitors today',
                     subtitle: 'Pre-approve a visitor using the button below.',
                   )
-                : ListView.builder(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.lg,
-                      vertical: AppSpacing.xs,
-                    ),
-                    itemCount: filtered.length,
-                    itemBuilder: (_, i) => _VisitorCard(
-                      visitor: filtered[i],
-                      onApprove: () => setState(() => filtered[i].status = VisitorStatus.approved),
-                      onReject: () => setState(() => filtered[i].status = VisitorStatus.rejected),
+                : RefreshIndicator(
+                    color: AppColors.primaryAmber,
+                    onRefresh: () async => setState(() {}),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.lg,
+                        vertical: AppSpacing.xs,
+                      ),
+                      itemCount: filtered.length,
+                      itemBuilder: (_, i) => _VisitorCard(
+                        visitor: filtered[i],
+                        onApprove: () { setState(() => filtered[i].status = VisitorStatus.approved); AnalyticsService.logVisitorAction('approved'); },
+                        onReject: () { setState(() => filtered[i].status = VisitorStatus.rejected); AnalyticsService.logVisitorAction('rejected'); },
+                      ),
                     ),
                   ),
           ),
@@ -423,7 +429,10 @@ class _ActionButton extends StatelessWidget {
       color: color,
       borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
       child: InkWell(
-        onTap: onTap,
+        onTap: () {
+          HapticFeedback.mediumImpact();
+          onTap();
+        },
         borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
         child: Padding(
           padding: const EdgeInsets.symmetric(

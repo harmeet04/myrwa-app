@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
 import '../../models/models.dart';
 import '../../utils/prefs_service.dart';
 import '../../utils/app_colors.dart';
+import '../../services/analytics_service.dart';
 
 class PollsScreen extends StatefulWidget {
   const PollsScreen({super.key});
@@ -101,8 +103,10 @@ class _PollsScreenState extends State<PollsScreen> {
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(12),
                                 onTap: voted || !p.isActive ? null : () {
+                                  HapticFeedback.mediumImpact();
                                   setState(() { p.votes[oi]++; p.votedIndex = oi; });
                                   PrefsService.savePollVote(p.id, oi);
+                                  AnalyticsService.logPollVoted(p.id);
                                   // Animated confirmation
                                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                                     content: Row(children: [
