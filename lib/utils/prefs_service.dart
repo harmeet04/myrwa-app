@@ -32,6 +32,9 @@ class PrefsService {
   static bool get isAdmin => _prefs.getBool('isAdmin') ?? false;
   static set isAdmin(bool v) => _prefs.setBool('isAdmin', v);
 
+  static bool get isGatedCommunity => _prefs.getBool('isGatedCommunity') ?? true;
+  static set isGatedCommunity(bool v) => _prefs.setBool('isGatedCommunity', v);
+
   static String get userId => _prefs.getString('userId') ?? '';
   static set userId(String v) => _prefs.setString('userId', v);
 

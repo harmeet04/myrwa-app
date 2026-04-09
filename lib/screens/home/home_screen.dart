@@ -501,9 +501,12 @@ class _NeedsAttentionSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final pendingVisitors = MockData.visitors
-        .where((v) => v.status == VisitorStatus.pending)
-        .toList();
+    final isGated = PrefsService.isGatedCommunity;
+    final pendingVisitors = isGated
+        ? MockData.visitors
+            .where((v) => v.status == VisitorStatus.pending)
+            .toList()
+        : <Visitor>[];
     final pendingBills = MockData.bills
         .where((b) =>
             b.status == BillStatus.pending || b.status == BillStatus.overdue)
@@ -586,15 +589,20 @@ class _QuickAccessSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isGated = PrefsService.isGatedCommunity;
     final tiles = [
-      _QuickTile('\u{1F6B6}', 'Visitors', AppColors.amberBg, AppColors.amberBorder, const VisitorsScreen()),
-      _QuickTile('\u{1F4E6}', 'Packages', AppColors.greenBg, AppColors.greenBorder, const PackagesScreen()),
+      if (isGated)
+        _QuickTile('\u{1F6B6}', 'Visitors', AppColors.amberBg, AppColors.amberBorder, const VisitorsScreen()),
+      if (isGated)
+        _QuickTile('\u{1F4E6}', 'Packages', AppColors.greenBg, AppColors.greenBorder, const PackagesScreen()),
       _QuickTile('\u{1F4E2}', 'Notices', AppColors.blueBg, AppColors.blueBorder, const NoticesScreen()),
       _QuickTile('\u{1F9FE}', 'Bills', AppColors.pinkBg, AppColors.pinkBorder, const BillsScreen()),
       _QuickTile('\u{1F3CB}\uFE0F', 'Booking', AppColors.purpleBg, AppColors.purpleBorder, const FacilityScreen()),
       _QuickTile('\u{1F5F3}\uFE0F', 'Polls', AppColors.amberBg, AppColors.amberBorder, const PollsScreen()),
-      _QuickTile('\u{1F6AA}', 'Gate Log', AppColors.greenBg, AppColors.greenBorder, const GateLogScreen()),
-      _QuickTile('\u{1F511}', 'QR Pass', AppColors.blueBg, AppColors.blueBorder, const QrPassScreen()),
+      if (isGated)
+        _QuickTile('\u{1F6AA}', 'Gate Log', AppColors.greenBg, AppColors.greenBorder, const GateLogScreen()),
+      if (isGated)
+        _QuickTile('\u{1F511}', 'QR Pass', AppColors.blueBg, AppColors.blueBorder, const QrPassScreen()),
     ];
 
     return Column(

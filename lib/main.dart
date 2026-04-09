@@ -24,6 +24,7 @@ void main() async {
     society: 'Sector 15 Part 2, Gurgaon',
     communityType: 'sector',
     isAdmin: true,
+    isGated: false,
   );
   runApp(
     MultiProvider(

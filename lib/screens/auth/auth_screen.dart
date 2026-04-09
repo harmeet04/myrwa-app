@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/auth_service.dart';
 import '../../services/notification_service.dart';
 import '../../services/firestore_service.dart';
+import '../../utils/prefs_service.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
 import '../../utils/app_colors.dart';
@@ -156,6 +157,7 @@ class _AuthScreenState extends State<AuthScreen> {
         communityType: _communityType,
         isAdmin: _loginAsAdmin,
       );
+      PrefsService.isGatedCommunity = true; // default for manual signups
       // Init notifications after profile is saved
       await NotificationService.init();
       if (!mounted) return;
@@ -186,6 +188,7 @@ class _AuthScreenState extends State<AuthScreen> {
         communityType: data['communityType'] ?? 'society',
         isAdmin: data['isAdmin'] ?? false,
       );
+      PrefsService.isGatedCommunity = data['isGated'] ?? true;
       await NotificationService.init();
       return true;
     } catch (e) {

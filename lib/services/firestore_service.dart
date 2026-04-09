@@ -29,6 +29,7 @@ class FirestoreService {
     required String society,
     required String communityType,
     bool isAdmin = false,
+    bool isGated = true,
   }) async {
     await _db.collection('pre_registered_users').doc(phone).set({
       'phone': phone,
@@ -37,6 +38,7 @@ class FirestoreService {
       'society': society,
       'communityType': communityType,
       'isAdmin': isAdmin,
+      'isGated': isGated,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }

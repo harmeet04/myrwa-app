@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_spacing.dart';
+import '../../utils/prefs_service.dart';
 import '../../widgets/warm_card.dart';
 import '../visitors/visitors_screen.dart';
 import '../bills/bills_screen.dart';
@@ -13,10 +14,13 @@ class ServicesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isGated = PrefsService.isGatedCommunity;
     final items = [
-      _ServiceItem('🚶', 'Visitors', 'Manage guest approvals', AppColors.amberBg, AppColors.amberBorder, const VisitorsScreen()),
+      if (isGated)
+        _ServiceItem('🚶', 'Visitors', 'Manage guest approvals', AppColors.amberBg, AppColors.amberBorder, const VisitorsScreen()),
       _ServiceItem('🧾', 'Bills', 'Maintenance & payments', AppColors.blueBg, AppColors.blueBorder, const BillsScreen()),
-      _ServiceItem('📦', 'Packages', 'Deliveries & parcels', AppColors.greenBg, AppColors.greenBorder, const PackagesScreen()),
+      if (isGated)
+        _ServiceItem('📦', 'Packages', 'Deliveries & parcels', AppColors.greenBg, AppColors.greenBorder, const PackagesScreen()),
       _ServiceItem('🏋️', 'Facility Booking', 'Clubhouse, gym, pool & more', AppColors.pinkBg, AppColors.pinkBorder, const FacilityScreen()),
       _ServiceItem('🛍️', 'Marketplace', 'Buy & sell within society', AppColors.purpleBg, AppColors.purpleBorder, const MarketplaceScreen()),
     ];

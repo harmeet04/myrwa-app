@@ -13,7 +13,6 @@ import '../vehicle/vehicle_screen.dart';
 import '../sos/sos_screen.dart';
 import '../vendor/vendor_screen.dart';
 import '../accounting/accounting_screen.dart';
-import '../voting/voting_screen.dart';
 import '../documents/documents_screen.dart';
 import '../guard/guard_screen.dart';
 import '../visitors/visitors_screen.dart';
@@ -42,48 +41,52 @@ class MoreScreen extends StatelessWidget {
             bgColor: AppColors.amberBg,
             onTap: () => _push(context, const BillsScreen()),
           ),
-          _MoreTile(
-            icon: Icons.account_balance,
-            title: locale.get('accounting'),
-            subtitle: locale.get('sub_accounting'),
-            iconColor: AppColors.primaryOrange,
-            bgColor: AppColors.amberBg,
-            onTap: () => _push(context, const AccountingScreen()),
-          ),
+          if (PrefsService.isAdmin)
+            _MoreTile(
+              icon: Icons.account_balance,
+              title: locale.get('accounting'),
+              subtitle: locale.get('sub_accounting'),
+              iconColor: AppColors.primaryOrange,
+              bgColor: AppColors.amberBg,
+              onTap: () => _push(context, const AccountingScreen()),
+            ),
 
-          _SectionHeader('Gate & Security'),
-          _MoreTile(
-            icon: Icons.door_front_door,
-            title: locale.get('visitor_management'),
-            subtitle: locale.get('sub_visitors'),
-            iconColor: AppColors.statusSuccess,
-            bgColor: AppColors.greenBg,
-            onTap: () => _push(context, const VisitorsScreen()),
-          ),
-          _MoreTile(
-            icon: Icons.door_sliding,
-            title: locale.get('gate_log'),
-            subtitle: locale.get('sub_gate_log'),
-            iconColor: AppColors.statusSuccess,
-            bgColor: AppColors.greenBg,
-            onTap: () => _push(context, const GateLogScreen()),
-          ),
-          _MoreTile(
-            icon: Icons.qr_code,
-            title: locale.get('qr_pass'),
-            subtitle: locale.get('sub_qr_pass'),
-            iconColor: AppColors.statusSuccess,
-            bgColor: AppColors.greenBg,
-            onTap: () => _push(context, const QrPassScreen()),
-          ),
-          _MoreTile(
-            icon: Icons.security,
-            title: locale.get('guard'),
-            subtitle: locale.get('sub_guard'),
-            iconColor: AppColors.textSecondary,
-            bgColor: const Color(0xFFF5F5F4),
-            onTap: () => _push(context, const GuardScreen()),
-          ),
+          if (PrefsService.isGatedCommunity) ...[
+            _SectionHeader('Gate & Security'),
+            _MoreTile(
+              icon: Icons.door_front_door,
+              title: locale.get('visitor_management'),
+              subtitle: locale.get('sub_visitors'),
+              iconColor: AppColors.statusSuccess,
+              bgColor: AppColors.greenBg,
+              onTap: () => _push(context, const VisitorsScreen()),
+            ),
+            _MoreTile(
+              icon: Icons.door_sliding,
+              title: locale.get('gate_log'),
+              subtitle: locale.get('sub_gate_log'),
+              iconColor: AppColors.statusSuccess,
+              bgColor: AppColors.greenBg,
+              onTap: () => _push(context, const GateLogScreen()),
+            ),
+            _MoreTile(
+              icon: Icons.qr_code,
+              title: locale.get('qr_pass'),
+              subtitle: locale.get('sub_qr_pass'),
+              iconColor: AppColors.statusSuccess,
+              bgColor: AppColors.greenBg,
+              onTap: () => _push(context, const QrPassScreen()),
+            ),
+            if (PrefsService.isAdmin)
+              _MoreTile(
+                icon: Icons.security,
+                title: locale.get('guard'),
+                subtitle: locale.get('sub_guard'),
+                iconColor: AppColors.textSecondary,
+                bgColor: const Color(0xFFF5F5F4),
+                onTap: () => _push(context, const GuardScreen()),
+              ),
+          ],
           _MoreTile(
             icon: Icons.sos,
             title: locale.get('sos'),
@@ -104,14 +107,6 @@ class MoreScreen extends StatelessWidget {
           ),
 
           _SectionHeader('Governance'),
-          _MoreTile(
-            icon: Icons.how_to_vote,
-            title: locale.get('voting'),
-            subtitle: locale.get('sub_voting'),
-            iconColor: const Color(0xFF7C3AED),
-            bgColor: AppColors.purpleBg,
-            onTap: () => _push(context, const VotingScreen()),
-          ),
           _MoreTile(
             icon: Icons.folder,
             title: locale.get('documents'),
