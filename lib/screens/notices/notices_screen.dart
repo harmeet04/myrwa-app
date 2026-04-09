@@ -13,6 +13,7 @@ import '../../widgets/warm_card.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loader.dart';
 import '../../services/analytics_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class NoticesScreen extends StatefulWidget {
   const NoticesScreen({super.key});
@@ -752,7 +753,11 @@ class _NoticeCard extends StatelessWidget {
                       ),
                     ),
                   InkWell(
-                    onTap: () => showSnack(context, 'Shared: ${notice.title}'),
+                    onTap: () {
+                      final text = '${notice.title}\n\n${notice.body}\n\n— via myRWA';
+                      final url = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(text)}');
+                      launchUrl(url, mode: LaunchMode.externalApplication);
+                    },
                     borderRadius: BorderRadius.circular(4),
                     child: Padding(
                       padding: const EdgeInsets.all(4),
@@ -918,8 +923,11 @@ class _NoticeDetailSheet extends StatelessWidget {
               IconButton(
                 icon: const Icon(Icons.share,
                     color: AppColors.textSecondary),
-                onPressed: () =>
-                    showSnack(context, 'Shared: ${notice.title}'),
+                onPressed: () {
+                  final text = '${notice.title}\n\n${notice.body}\n\n— via myRWA';
+                  final url = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(text)}');
+                  launchUrl(url, mode: LaunchMode.externalApplication);
+                },
               ),
             ]),
           ],

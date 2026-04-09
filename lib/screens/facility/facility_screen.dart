@@ -53,10 +53,135 @@ class _FacilityScreenState extends State<FacilityScreen> {
     });
   }
 
+  void _showAddFacilityForm() {
+    final nameCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    final timingCtrl = TextEditingController(text: '06:00 - 20:00');
+    final slotsCtrl = TextEditingController(text: '12');
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.cardBorder, borderRadius: BorderRadius.circular(2)))),
+              const SizedBox(height: 16),
+              const Text('Add New Facility', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Facility Name', prefixIcon: Icon(Icons.meeting_room))),
+              const SizedBox(height: 12),
+              TextField(controller: descCtrl, maxLines: 2, decoration: const InputDecoration(labelText: 'Description')),
+              const SizedBox(height: 12),
+              TextField(controller: timingCtrl, decoration: const InputDecoration(labelText: 'Timings (e.g. 06:00 - 20:00)', prefixIcon: Icon(Icons.schedule))),
+              const SizedBox(height: 12),
+              TextField(controller: slotsCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Slots per day', prefixIcon: Icon(Icons.event_available))),
+              const SizedBox(height: 20),
+              FilledButton(
+                onPressed: () {
+                  if (nameCtrl.text.trim().isEmpty) return;
+                  setState(() {
+                    _facilities.add(_Facility(
+                      name: nameCtrl.text.trim(),
+                      icon: Icons.business,
+                      color: AppColors.primaryAmber,
+                      capacity: int.tryParse(slotsCtrl.text) ?? 10,
+                      pricePerHour: 0,
+                      amenities: descCtrl.text.trim().isNotEmpty ? [descCtrl.text.trim()] : [],
+                    ));
+                  });
+                  Navigator.pop(ctx);
+                  showSnack(context, 'Facility "${nameCtrl.text.trim()}" added!');
+                },
+                child: const Text('Add Facility'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showBookingsForFacility(_Facility f) {
+    final society = PrefsService.societyName;
+    final dateKey = DateFormat('yyyy-MM-dd').format(_selectedDate);
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        constraints: BoxConstraints(maxHeight: MediaQuery.of(ctx).size.height * 0.6),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.cardBorder, borderRadius: BorderRadius.circular(2)))),
+            const SizedBox(height: 16),
+            Text('Bookings: ${f.name.split("/")[0].trim()}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text('Date: ${DateFormat('dd MMM, EEEE').format(_selectedDate)}', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+            const SizedBox(height: 12),
+            const Divider(),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirestoreService.collection('facility_bookings')
+                    .where('society', isEqualTo: society)
+                    .where('dateKey', isEqualTo: dateKey)
+                    .where('facilityName', isEqualTo: f.name)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final docs = snapshot.data?.docs ?? [];
+                  if (docs.isEmpty) {
+                    return const Center(child: Text('No bookings for this date.'));
+                  }
+                  return ListView.builder(
+                    itemCount: docs.length,
+                    itemBuilder: (_, i) {
+                      final d = docs[i].data() as Map<String, dynamic>;
+                      return ListTile(
+                        leading: const Icon(Icons.person, color: AppColors.primaryAmber),
+                        title: Text(d['bookedBy'] ?? 'Unknown'),
+                        subtitle: Text('Flat: ${d['flat'] ?? '-'} | Slot: ${d['slot'] ?? '-'}'),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Facility Booking / सुविधा बुकिंग')),
+      floatingActionButton: PrefsService.isAdmin
+          ? FloatingActionButton.extended(
+              onPressed: _showAddFacilityForm,
+              backgroundColor: AppColors.primaryAmber,
+              icon: const Icon(Icons.add, color: Colors.white),
+              label: const Text('Add Facility', style: TextStyle(color: Colors.white)),
+            )
+          : null,
       body: Column(
         children: [
           Container(
@@ -160,6 +285,25 @@ class _FacilityScreenState extends State<FacilityScreen> {
                           icon: const Icon(Icons.calendar_today),
                           label: const Text('Book for this day / बुक करें'),
                         )),
+                      if (PrefsService.isAdmin) ...[
+                        const SizedBox(height: 8),
+                        Row(children: [
+                          Text(
+                            '${(booked).length} booking(s) today',
+                            style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                          ),
+                          const Spacer(),
+                          TextButton.icon(
+                            onPressed: () => _showBookingsForFacility(f),
+                            icon: const Icon(Icons.visibility, size: 16),
+                            label: const Text('View Bookings', style: TextStyle(fontSize: 12)),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.primaryAmber,
+                              visualDensity: VisualDensity.compact,
+                            ),
+                          ),
+                        ]),
+                      ],
                     ]),
                   ),
                 );

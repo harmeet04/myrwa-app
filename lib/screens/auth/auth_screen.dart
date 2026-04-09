@@ -116,32 +116,6 @@ class _AuthScreenState extends State<AuthScreen> {
     }
   }
 
-  void _signInWithGoogle() async {
-    setState(() { _loading = true; });
-    try {
-      final result = await AuthService.signInWithGoogle();
-      if (result == null) {
-        if (!mounted) return;
-        setState(() { _loading = false; });
-        return;
-      }
-      final hasProfile = await AuthService.loadUserProfile();
-      if (!mounted) return;
-      if (hasProfile) {
-        _goHome();
-      } else {
-        // Pre-fill name from Google
-        _nameCtrl.text = result.user?.displayName ?? '';
-        _phoneCtrl.text = result.user?.phoneNumber?.replaceAll('+91', '') ?? '';
-        setState(() { _loading = false; _step = 2; });
-      }
-    } catch (e) {
-      if (!mounted) return;
-      setState(() { _loading = false; });
-      showSnack(context, 'Google sign-in failed: $e', isError: true);
-    }
-  }
-
   void _completeProfile() async {
     if (_nameCtrl.text.isEmpty || _flatCtrl.text.isEmpty) {
       showSnack(context, 'Please fill all fields', isError: true);
@@ -443,31 +417,6 @@ class _AuthScreenState extends State<AuthScreen> {
       ),
       const SizedBox(height: AppSpacing.xl),
       _buildActionButton(label: 'Send OTP', onPressed: _sendOtp),
-      const SizedBox(height: AppSpacing.lg),
-      const Row(
-        children: [
-          Expanded(child: Divider()),
-          Padding(
-            padding: EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-            child: Text('OR', style: TextStyle(color: AppColors.textTertiary)),
-          ),
-          Expanded(child: Divider()),
-        ],
-      ),
-      const SizedBox(height: AppSpacing.lg),
-      OutlinedButton.icon(
-        onPressed: _loading ? null : _signInWithGoogle,
-        icon: const Icon(Icons.g_mobiledata, size: 28),
-        label: const Text('Sign in with Google', style: TextStyle(fontSize: 16)),
-        style: OutlinedButton.styleFrom(
-          padding: const EdgeInsets.symmetric(vertical: 14),
-          side: const BorderSide(color: AppColors.primaryAmber),
-          foregroundColor: AppColors.primaryAmber,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
-          ),
-        ),
-      ),
     ],
   );
 

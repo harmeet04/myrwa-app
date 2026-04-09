@@ -67,6 +67,61 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  void _showNotifications(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        minChildSize: 0.3,
+        expand: false,
+        builder: (_, scrollCtrl) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  const Text('Notifications', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const Spacer(),
+                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+                ],
+              ),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: ListView(
+                controller: scrollCtrl,
+                padding: const EdgeInsets.all(16),
+                children: [
+                  ...MockData.notices.take(3).map((n) => _NotificationItem(
+                    icon: Icons.campaign,
+                    color: AppColors.primaryAmber,
+                    title: n.title,
+                    subtitle: timeAgo(n.date),
+                  )),
+                  ...MockData.complaints.where((c) => c.status == ComplaintStatus.open).take(2).map((c) => _NotificationItem(
+                    icon: Icons.warning_amber,
+                    color: AppColors.statusWarning,
+                    title: 'Complaint: ${c.title}',
+                    subtitle: timeAgo(c.date),
+                  )),
+                  if (MockData.bills.where((b) => b.status == BillStatus.pending).isNotEmpty)
+                    _NotificationItem(
+                      icon: Icons.receipt_long,
+                      color: AppColors.statusError,
+                      title: 'Pending bills reminder',
+                      subtitle: 'You have unpaid bills',
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final userName = PrefsService.userName.isEmpty
@@ -94,6 +149,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 userName: userName,
                 societyName: societyName,
                 flat: userFlat,
+                onBellTap: () => _showNotifications(context),
               ),
             ),
 
@@ -422,12 +478,14 @@ class _GreetingBar extends StatelessWidget {
   final String userName;
   final String societyName;
   final String flat;
+  final VoidCallback? onBellTap;
 
   const _GreetingBar({
     required this.greeting,
     required this.userName,
     required this.societyName,
     required this.flat,
+    this.onBellTap,
   });
 
   @override
@@ -480,7 +538,7 @@ class _GreetingBar extends StatelessWidget {
             ),
           ),
           IconButton(
-            onPressed: () {},
+            onPressed: onBellTap,
             icon: Badge(
               isLabelVisible: notifProvider.totalBadge > 0,
               label: Text('${notifProvider.totalBadge}'),
@@ -665,6 +723,41 @@ class _QuickTile {
   final Color border;
   final Widget screen;
   const _QuickTile(this.emoji, this.label, this.bg, this.border, this.screen);
+}
+
+class _NotificationItem extends StatelessWidget {
+  final IconData icon;
+  final Color color;
+  final String title;
+  final String subtitle;
+  const _NotificationItem({required this.icon, required this.color, required this.title, required this.subtitle});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: color.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 20),
+          ),
+          const SizedBox(width: 12),
+          Expanded(child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(title, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+              Text(subtitle, style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+            ],
+          )),
+        ],
+      ),
+    );
+  }
 }
 
 // ─── 4. Community Feed ───
