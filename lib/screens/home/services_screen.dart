@@ -18,7 +18,7 @@ class ServicesScreen extends StatelessWidget {
     final items = [
       if (isGated)
         _ServiceItem('🚶', 'Visitors', 'Manage guest approvals', AppColors.amberBg, AppColors.amberBorder, const VisitorsScreen()),
-      _ServiceItem('🧾', 'Bills', 'Maintenance & payments', AppColors.blueBg, AppColors.blueBorder, const BillsScreen()),
+      _ServiceItem('🧾', 'Reminders', 'Maintenance & bill reminders', AppColors.blueBg, AppColors.blueBorder, const BillsScreen()),
       if (isGated)
         _ServiceItem('📦', 'Packages', 'Deliveries & parcels', AppColors.greenBg, AppColors.greenBorder, const PackagesScreen()),
       _ServiceItem('🏋️', 'Facility Booking', 'Clubhouse, gym, pool & more', AppColors.pinkBg, AppColors.pinkBorder, const FacilityScreen()),

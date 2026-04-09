@@ -3,6 +3,7 @@ import '../../models/models.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/prefs_service.dart';
 import '../../services/analytics_service.dart';
 
 class BillsScreen extends StatefulWidget {
@@ -12,196 +13,292 @@ class BillsScreen extends StatefulWidget {
   State<BillsScreen> createState() => _BillsScreenState();
 }
 
-class _BillsScreenState extends State<BillsScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabCtrl;
-  late List<Bill> _bills;
+class _BillsScreenState extends State<BillsScreen> {
+  int _selectedTab = 0; // 0 = Pending, 1 = History
 
-  @override
-  void initState() {
-    super.initState();
-    _tabCtrl = TabController(length: 2, vsync: this);
-    _bills = MockData.bills;
+  List<Bill> get _pendingBills {
+    final paidIds = PrefsService.paidBillIds;
+    return MockData.bills
+        .where((b) =>
+            (b.status == BillStatus.pending || b.status == BillStatus.overdue) &&
+            !paidIds.contains(b.id))
+        .toList();
   }
 
-  @override
-  void dispose() {
-    _tabCtrl.dispose();
-    super.dispose();
+  List<Bill> get _historyBills {
+    final paidIds = PrefsService.paidBillIds;
+    return MockData.bills
+        .where((b) => b.status == BillStatus.paid || paidIds.contains(b.id))
+        .toList();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
-    final pending = _bills.where((b) => b.status != BillStatus.paid).toList();
-    final paid = _bills.where((b) => b.status == BillStatus.paid).toList();
-    final totalDue = pending.fold<double>(0, (s, b) => s + b.amount);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Bill Payments'),
-        bottom: TabBar(
-          controller: _tabCtrl,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          tabs: const [Tab(text: 'Pending'), Tab(text: 'Paid')],
-        ),
-      ),
-      body: Column(
-        children: [
-          if (pending.isNotEmpty) Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: [cs.primary, cs.primary.withValues(alpha: 0.8)]),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Total Due', style: TextStyle(color: Colors.white.withValues(alpha: 0.8))),
-                    const SizedBox(height: 4),
-                    Text(formatCurrency(totalDue), style: const TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-                const Spacer(),
-                FilledButton(
-                  onPressed: () => showSnack(context, 'Payment gateway coming soon!'),
-                  style: FilledButton.styleFrom(backgroundColor: Colors.white, foregroundColor: cs.primary),
-                  child: const Text('Pay All'),
-                ),
-              ],
-            ),
-          ),
-          Expanded(
-            child: TabBarView(
-              controller: _tabCtrl,
-              children: [
-                _buildBillList(pending, false),
-                _buildBillList(paid, true),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBillList(List<Bill> bills, bool isPaid) {
-    if (bills.isEmpty) {
-      return Center(child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(isPaid ? Icons.receipt_long : Icons.check_circle, size: 64, color: AppColors.textTertiary),
-          const SizedBox(height: 8),
-          Text(isPaid ? 'No payment history' : 'All bills paid! 🎉'),
-        ],
-      ));
-    }
-    return RefreshIndicator(
-      color: AppColors.primaryAmber,
-      onRefresh: () async => setState(() {}),
-      child: ListView.builder(
-        padding: const EdgeInsets.only(bottom: 16),
-        itemCount: bills.length,
-        itemBuilder: (_, i) {
-          final b = bills[i];
-          return Card(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => _showBillDetail(context, b),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: _billColor(b).withValues(alpha: 0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(categoryIcon(b.category), color: _billColor(b)),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(b.title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 4),
-                        Text(b.status == BillStatus.paid
-                            ? 'Paid on ${formatDate(b.paidDate!)}'
-                            : 'Due: ${formatDate(b.dueDate)}',
-                            style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                      ],
-                    )),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(formatCurrency(b.amount), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: _billColor(b))),
-                        const SizedBox(height: 4),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: _billColor(b).withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: Text(b.status.name.toUpperCase(), style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: _billColor(b))),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
+  void _markAsPaid(Bill b) {
+    PrefsService.markBillPaid(b.id);
+    AnalyticsService.logBillPaid(b.amount.toDouble());
+    setState(() {});
+    showSnack(context, '${b.title} marked as paid');
   }
 
   Color _billColor(Bill b) {
     switch (b.status) {
-      case BillStatus.paid: return AppColors.statusSuccess;
-      case BillStatus.pending: return AppColors.statusWarning;
-      case BillStatus.overdue: return AppColors.statusError;
+      case BillStatus.paid:
+        return AppColors.statusSuccess;
+      case BillStatus.pending:
+        return AppColors.statusWarning;
+      case BillStatus.overdue:
+        return AppColors.statusError;
     }
   }
 
-  void _showBillDetail(BuildContext context, Bill b) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(b.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 12),
-            Text(formatCurrency(b.amount), style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: _billColor(b))),
-            const SizedBox(height: 12),
-            Text(b.description, style: TextStyle(color: AppColors.textSecondary)),
-            const SizedBox(height: 8),
-            Text('Category: ${b.category}'),
-            Text('Due: ${formatDate(b.dueDate)}'),
-            if (b.paidDate != null) Text('Paid: ${formatDate(b.paidDate!)}'),
-            const SizedBox(height: 20),
-            if (b.status != BillStatus.paid) FilledButton(
-              onPressed: () {
-                setState(() {
-                  b.status = BillStatus.paid;
-                  b.paidDate = DateTime.now();
-                });
-                AnalyticsService.logBillPaid(b.amount.toDouble());
-                Navigator.pop(context);
-                showSnack(context, 'Payment successful!');
-              },
-              child: Text('Pay ${formatCurrency(b.amount)}'),
+  @override
+  Widget build(BuildContext context) {
+    final bills = _selectedTab == 0 ? _pendingBills : _historyBills;
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Reminders'),
+      ),
+      body: Column(
+        children: [
+          // Tab selector
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+            decoration: BoxDecoration(
+              color: AppColors.surfaceLight,
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: AppColors.cardBorder),
             ),
-            const SizedBox(height: 8),
+            child: Row(
+              children: [
+                _TabButton(
+                  label: 'Pending',
+                  active: _selectedTab == 0,
+                  onTap: () => setState(() => _selectedTab = 0),
+                ),
+                _TabButton(
+                  label: 'History',
+                  active: _selectedTab == 1,
+                  onTap: () => setState(() => _selectedTab = 1),
+                ),
+              ],
+            ),
+          ),
+
+          // Bill list
+          Expanded(
+            child: bills.isEmpty
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _selectedTab == 0
+                              ? Icons.check_circle_outline
+                              : Icons.receipt_long_outlined,
+                          size: 64,
+                          color: AppColors.textTertiary,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _selectedTab == 0
+                              ? 'All caught up! No pending bills.'
+                              : 'No payment history yet.',
+                          style: const TextStyle(
+                              color: AppColors.textSecondary, fontSize: 14),
+                        ),
+                      ],
+                    ),
+                  )
+                : RefreshIndicator(
+                    color: AppColors.primaryAmber,
+                    onRefresh: () async => setState(() {}),
+                    child: ListView.builder(
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                      itemCount: bills.length,
+                      itemBuilder: (_, i) => _BillCard(
+                        bill: bills[i],
+                        isPaid: _selectedTab == 1,
+                        billColor: _billColor(bills[i]),
+                        onMarkPaid: () => _markAsPaid(bills[i]),
+                      ),
+                    ),
+                  ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Tab Button ───
+class _TabButton extends StatelessWidget {
+  final String label;
+  final bool active;
+  final VoidCallback onTap;
+
+  const _TabButton({
+    required this.label,
+    required this.active,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          margin: const EdgeInsets.all(4),
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          decoration: BoxDecoration(
+            color: active ? AppColors.primaryAmber : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: active ? Colors.white : AppColors.textSecondary,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Bill Card ───
+class _BillCard extends StatelessWidget {
+  final Bill bill;
+  final bool isPaid;
+  final Color billColor;
+  final VoidCallback onMarkPaid;
+
+  const _BillCard({
+    required this.bill,
+    required this.isPaid,
+    required this.billColor,
+    required this.onMarkPaid,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final daysUntilDue = bill.dueDate.difference(DateTime.now()).inDays;
+    final isDueSoon = !isPaid && daysUntilDue >= 0 && daysUntilDue <= 7;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 12),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                // Icon
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: billColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(categoryIcon(bill.category), color: billColor, size: 20),
+                ),
+                const SizedBox(width: 12),
+                // Title + date
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        bill.title,
+                        style: const TextStyle(
+                            fontWeight: FontWeight.w600, fontSize: 15),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        isPaid
+                            ? (bill.paidDate != null
+                                ? 'Paid on ${formatDate(bill.paidDate!)}'
+                                : 'Paid')
+                            : 'Due: ${formatDate(bill.dueDate)}',
+                        style: const TextStyle(
+                            fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                // Amount
+                Text(
+                  formatCurrency(bill.amount),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: billColor),
+                ),
+              ],
+            ),
+
+            // Due-soon warning chip
+            if (isDueSoon) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.statusError.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                      color: AppColors.statusError.withValues(alpha: 0.3)),
+                ),
+                child: Text(
+                  daysUntilDue == 0
+                      ? '⚠️ Due today!'
+                      : '⚠️ Due in $daysUntilDue day${daysUntilDue == 1 ? '' : 's'}',
+                  style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.statusError),
+                ),
+              ),
+            ],
+
+            // Action row
+            const SizedBox(height: 10),
+            if (isPaid)
+              Row(
+                children: [
+                  const Icon(Icons.check_circle,
+                      color: AppColors.statusSuccess, size: 16),
+                  const SizedBox(width: 4),
+                  const Text(
+                    'Paid',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.statusSuccess),
+                  ),
+                ],
+              )
+            else
+              Align(
+                alignment: Alignment.centerRight,
+                child: OutlinedButton(
+                  onPressed: onMarkPaid,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryAmber,
+                    side: const BorderSide(color: AppColors.primaryAmber),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                  child: const Text('Mark as Paid',
+                      style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
+                ),
+              ),
           ],
         ),
       ),

@@ -507,9 +507,11 @@ class _NeedsAttentionSection extends StatelessWidget {
             .where((v) => v.status == VisitorStatus.pending)
             .toList()
         : <Visitor>[];
+    final paidIds = PrefsService.paidBillIds;
     final pendingBills = MockData.bills
         .where((b) =>
-            b.status == BillStatus.pending || b.status == BillStatus.overdue)
+            (b.status == BillStatus.pending || b.status == BillStatus.overdue) &&
+            !paidIds.contains(b.id))
         .toList();
 
     final hasPending = pendingVisitors.isNotEmpty || pendingBills.isNotEmpty;
@@ -567,7 +569,7 @@ class _NeedsAttentionSection extends StatelessWidget {
                           '\u20B9${b.amount.toInt()} \u2022 Due ${formatDate(b.dueDate)}',
                       actions: [
                         ActionTileButton(
-                          label: 'Pay',
+                          label: 'Mark Paid',
                           color: AppColors.primaryAmber,
                           onTap: () => onPush(const BillsScreen()),
                         ),
