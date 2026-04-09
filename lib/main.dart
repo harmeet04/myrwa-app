@@ -23,7 +23,7 @@ void main() async {
     flat: '1323',
     society: 'Sector 15 Part 2, Gurgaon',
     communityType: 'sector',
-    isAdmin: true,
+    isAdmin: false,
     isGated: false,
   );
   runApp(
