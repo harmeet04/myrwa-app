@@ -48,19 +48,26 @@ class FirestoreService {
     return _users.where('society', isEqualTo: society).snapshots();
   }
 
+  static Resident residentFromDoc(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return Resident(
+      id: doc.id,
+      name: data['name'] ?? '',
+      flat: data['flat'] ?? '',
+      phone: data['phone'] ?? '',
+      isAdmin: data['isAdmin'] ?? false,
+      avatarColor: data['avatarColor'] ?? 0xFF1565C0,
+    );
+  }
+
   static Future<List<Resident>> getResidents(String society) async {
-    final snap = await _users.where('society', isEqualTo: society).get();
-    return snap.docs.map((d) {
-      final data = d.data() as Map<String, dynamic>;
-      return Resident(
-        id: d.id,
-        name: data['name'] ?? '',
-        flat: data['flat'] ?? '',
-        phone: data['phone'] ?? '',
-        isAdmin: data['isAdmin'] ?? false,
-        avatarColor: data['avatarColor'] ?? 0xFF1565C0,
-      );
-    }).toList();
+    try {
+      final snap = await _users.where('society', isEqualTo: society).get();
+      return snap.docs.map((d) => residentFromDoc(d)).toList();
+    } catch (e) {
+      debugPrint('FirestoreService.getResidents error: $e');
+      return [];
+    }
   }
 
   // ──── NOTICES ────
@@ -202,21 +209,27 @@ class FirestoreService {
     );
   }
 
-  static Future<void> addEvent(Event e) async {
-    await _events.add({
-      'title': e.title,
-      'description': e.description,
-      'date': Timestamp.fromDate(e.date),
-      'location': e.location,
-      'organizer': e.organizer,
-      'rsvpCount': e.rsvpCount,
-      'maybeCount': e.maybeCount,
-      'maxCapacity': e.maxCapacity,
-      'attendees': e.attendees,
-      'maybeAttendees': e.maybeAttendees,
-      'society': PrefsService.societyName,
-      'createdBy': AuthService.uid,
-    });
+  static Future<bool> addEvent(Event e) async {
+    try {
+      await _events.add({
+        'title': e.title,
+        'description': e.description,
+        'date': Timestamp.fromDate(e.date),
+        'location': e.location,
+        'organizer': e.organizer,
+        'rsvpCount': e.rsvpCount,
+        'maybeCount': e.maybeCount,
+        'maxCapacity': e.maxCapacity,
+        'attendees': e.attendees,
+        'maybeAttendees': e.maybeAttendees,
+        'society': PrefsService.societyName,
+        'createdBy': AuthService.uid,
+      });
+      return true;
+    } catch (e) {
+      debugPrint('FirestoreService.addEvent error: $e');
+      return false;
+    }
   }
 
   static Future<void> updateEvent(String id, Map<String, dynamic> data) async {
@@ -247,18 +260,24 @@ class FirestoreService {
     );
   }
 
-  static Future<void> addPoll(Poll p) async {
-    await _polls.add({
-      'question': p.question,
-      'options': p.options,
-      'votes': p.votes,
-      'totalVoters': p.totalVoters,
-      'endDate': Timestamp.fromDate(p.endDate),
-      'createdBy': p.createdBy,
-      'isAnonymous': p.isAnonymous,
-      'society': PrefsService.societyName,
-      'createdByUid': AuthService.uid,
-    });
+  static Future<bool> addPoll(Poll p) async {
+    try {
+      await _polls.add({
+        'question': p.question,
+        'options': p.options,
+        'votes': p.votes,
+        'totalVoters': p.totalVoters,
+        'endDate': Timestamp.fromDate(p.endDate),
+        'createdBy': p.createdBy,
+        'isAnonymous': p.isAnonymous,
+        'society': PrefsService.societyName,
+        'createdByUid': AuthService.uid,
+      });
+      return true;
+    } catch (e) {
+      debugPrint('FirestoreService.addPoll error: $e');
+      return false;
+    }
   }
 
   static Future<void> votePoll(String pollId, int optionIndex) async {
@@ -298,17 +317,23 @@ class FirestoreService {
     );
   }
 
-  static Future<void> addVisitor(Visitor v) async {
-    await _visitors.add({
-      'name': v.name,
-      'purpose': v.purpose,
-      'flat': v.flat,
-      'date': Timestamp.fromDate(v.date),
-      'otp': v.otp,
-      'status': v.status.name,
-      'society': PrefsService.societyName,
-      'createdBy': AuthService.uid,
-    });
+  static Future<bool> addVisitor(Visitor v) async {
+    try {
+      await _visitors.add({
+        'name': v.name,
+        'purpose': v.purpose,
+        'flat': v.flat,
+        'date': Timestamp.fromDate(v.date),
+        'otp': v.otp,
+        'status': v.status.name,
+        'society': PrefsService.societyName,
+        'createdBy': AuthService.uid,
+      });
+      return true;
+    } catch (e) {
+      debugPrint('FirestoreService.addVisitor error: $e');
+      return false;
+    }
   }
 
   static Future<void> updateVisitor(String id, Map<String, dynamic> data) async {
@@ -446,6 +471,29 @@ class FirestoreService {
     await _marketplace.doc(id).update(data);
   }
 
+  // ──── SERVICES ────
+  static CollectionReference get _services => _db.collection('services');
+
+  static Stream<QuerySnapshot> servicesStream(String society) {
+    return _services
+        .where('society', isEqualTo: society)
+        .orderBy('shopName')
+        .snapshots();
+  }
+
+  static ServiceItem serviceItemFromDoc(DocumentSnapshot doc) {
+    final d = doc.data() as Map<String, dynamic>;
+    return ServiceItem(
+      id: doc.id,
+      shopName: d['shopName'] ?? '',
+      description: d['description'] ?? '',
+      category: d['category'] ?? '',
+      timings: d['timings'] ?? '',
+      contact: d['contact'] ?? '',
+      flat: d['flat'] ?? '',
+    );
+  }
+
   // ──── CHAT ────
   static CollectionReference get _chatRooms => _db.collection('chat_rooms');
 
@@ -537,11 +585,16 @@ class FirestoreService {
 
   static CollectionReference collection(String name) => _db.collection(name);
 
-  static Future<DocumentReference> addDoc(String collectionName, Map<String, dynamic> data) async {
-    data['society'] = PrefsService.societyName;
-    data['createdBy'] = AuthService.uid;
-    data['createdAt'] = FieldValue.serverTimestamp();
-    return await _db.collection(collectionName).add(data);
+  static Future<DocumentReference?> addDoc(String collectionName, Map<String, dynamic> data) async {
+    try {
+      data['society'] = PrefsService.societyName;
+      data['createdBy'] = AuthService.uid;
+      data['createdAt'] = FieldValue.serverTimestamp();
+      return await _db.collection(collectionName).add(data);
+    } catch (e) {
+      debugPrint('FirestoreService.addDoc error ($collectionName): $e');
+      return null;
+    }
   }
 
   static Future<bool> updateDoc(String collectionName, String docId, Map<String, dynamic> data) async {
