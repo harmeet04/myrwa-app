@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
@@ -14,131 +15,274 @@ class SosScreen extends StatefulWidget {
   State<SosScreen> createState() => _SosScreenState();
 }
 
-class _SosScreenState extends State<SosScreen> with SingleTickerProviderStateMixin {
+class _SosScreenState extends State<SosScreen> {
   bool _alertSent = false;
-  late AnimationController _pulseCtrl;
-  late Animation<double> _pulse;
+  String _alertType = '';
+  List<String> _contacts = [];
 
   @override
   void initState() {
     super.initState();
-    _pulseCtrl = AnimationController(vsync: this, duration: const Duration(seconds: 1))..repeat(reverse: true);
-    _pulse = Tween<double>(begin: 1.0, end: 1.15).animate(CurvedAnimation(parent: _pulseCtrl, curve: Curves.easeInOut));
+    _contacts = List.from(PrefsService.emergencyContacts);
   }
 
-  @override
-  void dispose() {
-    _pulseCtrl.dispose();
-    super.dispose();
+  void _triggerSos(String type) async {
+    HapticFeedback.heavyImpact();
+    setState(() {
+      _alertSent = true;
+      _alertType = type;
+    });
+    AnalyticsService.logSosTriggered();
+    await FirestoreService.sendSosAlert(type);
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        icon: const Icon(Icons.warning, color: AppColors.statusError, size: 48),
+        title: Text('\u{1F6A8} $type Alert Sent!'),
+        content: Text(
+          'All residents and emergency contacts have been notified.\n\n'
+          '\u2705 Nearby residents notified\n'
+          '\u2705 Emergency contacts called\n'
+          '${PrefsService.isGatedCommunity ? '\u2705 Guards alerted\n' : ''}\n'
+          'Stay calm. Help is on the way!\n'
+          '\u0936\u093E\u0902\u0924 \u0930\u0939\u0947\u0902, \u092E\u0926\u0926 \u0906 \u0930\u0939\u0940 \u0939\u0948!',
+        ),
+        actions: [
+          FilledButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
+        ],
+      ),
+    );
+  }
+
+  void _makeCall(String number) async {
+    final uri = Uri(scheme: 'tel', path: number);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    } else {
+      if (mounted) showSnack(context, 'Cannot make call to $number');
+    }
+  }
+
+  void _addContact() {
+    final nameCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          left: 16, right: 16, top: 24,
+          bottom: MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('Add Emergency Contact', style: Theme.of(ctx).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            TextField(
+              controller: nameCtrl,
+              decoration: const InputDecoration(labelText: 'Name', border: OutlineInputBorder(), prefixIcon: Icon(Icons.person)),
+              textCapitalization: TextCapitalization.words,
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: phoneCtrl,
+              decoration: const InputDecoration(labelText: 'Phone Number', border: OutlineInputBorder(), prefixIcon: Icon(Icons.phone)),
+              keyboardType: TextInputType.phone,
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () {
+                final name = nameCtrl.text.trim();
+                final phone = phoneCtrl.text.trim();
+                if (name.isEmpty || phone.isEmpty) {
+                  showSnack(ctx, 'Please fill both fields');
+                  return;
+                }
+                setState(() {
+                  _contacts.add('$name|$phone');
+                });
+                PrefsService.setEmergencyContacts(_contacts);
+                Navigator.pop(ctx);
+                showSnack(context, '$name added to emergency contacts');
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('Add Contact'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _deleteContact(int index) {
+    final parts = _contacts[index].split('|');
+    final name = parts.isNotEmpty ? parts[0] : 'Contact';
+    setState(() {
+      _contacts.removeAt(index);
+    });
+    PrefsService.setEmergencyContacts(_contacts);
+    showSnack(context, '$name removed');
   }
 
   @override
   Widget build(BuildContext context) {
     final society = PrefsService.societyName;
+    final isGated = PrefsService.isGatedCommunity;
+
     return Scaffold(
       appBar: AppBar(
-        title: const Text('SOS / Emergency / आपातकाल'),
+        title: const Text('Emergency SOS'),
         backgroundColor: AppColors.statusError,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Big SOS Button
-            const SizedBox(height: 20),
-            Center(
-              child: AnimatedBuilder(
-                animation: _pulse,
-                builder: (context, child) {
-                  return Transform.scale(
-                    scale: _alertSent ? 1.0 : _pulse.value,
-                    child: child,
-                  );
-                },
-                child: GestureDetector(
-                  onLongPress: _triggerSos,
-                  child: Container(
-                    width: 180,
-                    height: 180,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: _alertSent ? AppColors.statusSuccess : AppColors.statusError,
-                      boxShadow: [
-                        BoxShadow(
-                          color: (_alertSent ? AppColors.statusSuccess : AppColors.statusError).withValues(alpha: 0.4),
-                          blurRadius: 30,
-                          spreadRadius: 10,
+            // -- Select Emergency Type --
+            Text('Select Emergency Type', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text('Tap a card to send alert / \u0906\u092A\u093E\u0924\u0915\u093E\u0932 \u092E\u0947\u0902 \u0915\u093E\u0930\u094D\u0921 \u0926\u092C\u093E\u090F\u0902', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+            const SizedBox(height: 12),
+            _EmergencyTypeCard(
+              emoji: '\u{1F534}',
+              title: 'Thief / Intruder',
+              subtitle: 'Someone suspicious / \u091A\u094B\u0930',
+              color: const Color(0xFFDC2626),
+              onTap: () => _triggerSos('Thief/Intruder'),
+            ),
+            const SizedBox(height: 8),
+            _EmergencyTypeCard(
+              emoji: '\u{1F525}',
+              title: 'Fire',
+              subtitle: 'Fire emergency / \u0906\u0917',
+              color: const Color(0xFFEA580C),
+              onTap: () => _triggerSos('Fire'),
+            ),
+            const SizedBox(height: 8),
+            _EmergencyTypeCard(
+              emoji: '\u{1F3E5}',
+              title: 'Medical',
+              subtitle: 'Medical emergency / \u092E\u0947\u0921\u093F\u0915\u0932',
+              color: const Color(0xFF2563EB),
+              onTap: () => _triggerSos('Medical'),
+            ),
+
+            // -- Alert sent feedback --
+            if (_alertSent) ...[
+              const SizedBox(height: 16),
+              Card(
+                color: AppColors.statusSuccess.withValues(alpha: 0.1),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.check_circle, color: AppColors.statusSuccess, size: 32),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('\u{1F6A8} $_alertType Alert Sent!', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                            const SizedBox(height: 2),
+                            const Text('All residents notified. Help is on the way!', style: TextStyle(fontSize: 13)),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(_alertSent ? Icons.check : Icons.sos, size: 56, color: Colors.white),
-                        const SizedBox(height: 8),
-                        Text(
-                          _alertSent ? 'ALERT SENT!\nसूचना भेजी गई' : 'LONG PRESS\nदबाकर रखें',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14),
-                        ),
-                      ],
-                    ),
+                      ),
+                      TextButton(
+                        onPressed: () => setState(() { _alertSent = false; _alertType = ''; }),
+                        child: const Text('Reset'),
+                      ),
+                    ],
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              _alertSent ? 'Help is on the way! / मदद आ रही है!' : 'Long press the button in emergency\nआपातकाल में बटन को दबाकर रखें',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 15, color: AppColors.textPrimary),
-            ),
-            if (_alertSent) ...[
-              const SizedBox(height: 12),
-              FilledButton.tonal(
-                onPressed: () => setState(() => _alertSent = false),
-                child: const Text('Reset / रीसेट'),
-              ),
             ],
 
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 16),
 
-            // Quick Emergency Actions
+            // -- Quick Emergency Actions --
             Text('Quick Emergency Actions', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: _EmergencyCard(icon: Icons.local_police, label: 'Police\nपुलिस', number: '100', color: AppColors.primaryAmber, onTap: () => showSnack(context, 'Calling Police (100)...'))),
+                Expanded(child: _EmergencyCard(icon: Icons.local_police, label: 'Police\n\u092A\u0941\u0932\u093F\u0938', number: '100', color: AppColors.primaryAmber, onTap: () => _makeCall('100'))),
                 const SizedBox(width: 8),
-                Expanded(child: _EmergencyCard(icon: Icons.fire_truck, label: 'Fire\nदमकल', number: '101', color: AppColors.primaryOrange, onTap: () => showSnack(context, 'Calling Fire Brigade (101)...'))),
+                Expanded(child: _EmergencyCard(icon: Icons.fire_truck, label: 'Fire\n\u0926\u092E\u0915\u0932', number: '101', color: AppColors.primaryOrange, onTap: () => _makeCall('101'))),
               ],
             ),
             const SizedBox(height: 8),
             Row(
               children: [
-                Expanded(child: _EmergencyCard(icon: Icons.emergency, label: 'Ambulance\nएम्बुलेंस', number: '108', color: AppColors.statusError, onTap: () => showSnack(context, 'Calling Ambulance (108)...'))),
+                Expanded(child: _EmergencyCard(icon: Icons.emergency, label: 'Ambulance\n\u090F\u092E\u094D\u092C\u0941\u0932\u0947\u0902\u0938', number: '108', color: AppColors.statusError, onTap: () => _makeCall('108'))),
                 const SizedBox(width: 8),
-                Expanded(child: _EmergencyCard(icon: Icons.security, label: 'Guard\nगार्ड', number: 'Gate', color: AppColors.primaryAmber, onTap: () => showSnack(context, 'Alerting society guard...'))),
+                if (isGated)
+                  Expanded(child: _EmergencyCard(icon: Icons.security, label: 'Guard\n\u0917\u093E\u0930\u094D\u0921', number: 'Gate', color: AppColors.primaryAmber, onTap: () => showSnack(context, 'Alerting society guard...')))
+                else
+                  const Expanded(child: SizedBox()),
               ],
             ),
 
             const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 16),
 
-            // Emergency Contacts
-            Text('My Emergency Contacts', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+            // -- My Emergency Contacts --
+            Row(
+              children: [
+                Expanded(
+                  child: Text('My Emergency Contacts', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+                ),
+                TextButton.icon(
+                  onPressed: _addContact,
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Add Contact'),
+                ),
+              ],
+            ),
             const SizedBox(height: 8),
-            ..._emergencyContacts.map((c) => Card(
-              child: ListTile(
-                leading: CircleAvatar(backgroundColor: AppColors.redBg, child: Icon(Icons.person, color: AppColors.statusError)),
-                title: Text(c.$1),
-                subtitle: Text(c.$2),
-                trailing: IconButton(icon: const Icon(Icons.call, color: AppColors.statusSuccess), onPressed: () => showSnack(context, 'Calling ${c.$1}...')),
+            if (_contacts.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Text('No emergency contacts added yet.\nTap "Add Contact" to add one.', style: TextStyle(color: AppColors.textTertiary, fontSize: 13)),
               ),
-            )),
+            ..._contacts.asMap().entries.map((entry) {
+              final idx = entry.key;
+              final parts = entry.value.split('|');
+              final name = parts.isNotEmpty ? parts[0] : '';
+              final phone = parts.length > 1 ? parts[1] : '';
+              return Card(
+                child: ListTile(
+                  leading: CircleAvatar(backgroundColor: AppColors.redBg, child: Icon(Icons.person, color: AppColors.statusError)),
+                  title: Text(name),
+                  subtitle: Text(phone),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.call, color: AppColors.statusSuccess),
+                        onPressed: () => _makeCall(phone),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: AppColors.statusError),
+                        onPressed: () => _deleteContact(idx),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }),
 
             const SizedBox(height: 24),
+            const Divider(),
+            const SizedBox(height: 16),
 
-            // Recent Alerts from Firestore
+            // -- Recent Emergency Alerts --
             Text('Recent Emergency Alerts', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             StreamBuilder<QuerySnapshot>(
@@ -171,7 +315,7 @@ class _SosScreenState extends State<SosScreen> with SingleTickerProviderStateMix
                           child: Icon(Icons.warning, color: AppColors.statusWarning),
                         ),
                         title: Text('$type Emergency - Flat $flat'),
-                        subtitle: Text('${formatDateTime(time)} • ${isActive ? "Active" : "Resolved"}'),
+                        subtitle: Text('${formatDateTime(time)} \u2022 ${isActive ? "Active" : "Resolved"}'),
                         trailing: Icon(
                           isActive ? Icons.warning : Icons.check_circle,
                           color: isActive ? AppColors.statusWarning : AppColors.statusSuccess,
@@ -187,37 +331,57 @@ class _SosScreenState extends State<SosScreen> with SingleTickerProviderStateMix
       ),
     );
   }
+}
 
-  void _triggerSos() async {
-    HapticFeedback.heavyImpact();
-    setState(() => _alertSent = true);
-    AnalyticsService.logSosTriggered();
-    await FirestoreService.sendSosAlert('SOS');
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        icon: const Icon(Icons.warning, color: AppColors.statusError, size: 48),
-        title: const Text('🚨 SOS Alert Sent!'),
-        content: const Text(
-          '✅ Guards alerted\n'
-          '✅ Nearby residents notified\n'
-          '✅ Emergency contacts called\n\n'
-          'Stay calm. Help is on the way!\n'
-          'शांत रहें, मदद आ रही है!',
+class _EmergencyTypeCard extends StatelessWidget {
+  final String emoji;
+  final String title;
+  final String subtitle;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _EmergencyTypeCard({
+    required this.emoji,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: color.withValues(alpha: 0.3), width: 1.5),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+          child: Row(
+            children: [
+              Text(emoji, style: const TextStyle(fontSize: 36)),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(title, style: TextStyle(fontWeight: FontWeight.bold, fontSize: 17, color: color)),
+                    const SizedBox(height: 2),
+                    Text(subtitle, style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                  ],
+                ),
+              ),
+              Icon(Icons.arrow_forward_ios, color: color, size: 18),
+            ],
+          ),
         ),
-        actions: [
-          FilledButton(onPressed: () => Navigator.pop(context), child: const Text('OK')),
-        ],
       ),
     );
   }
-
-  static const _emergencyContacts = [
-    ('Priya Sharma (Wife)', '9876543210'),
-    ('Rajesh Sharma (Father)', '9876543211'),
-    ('Dr. Anita Kulkarni', '9800000003'),
-  ];
 }
 
 class _EmergencyCard extends StatelessWidget {

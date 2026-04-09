@@ -105,6 +105,10 @@ class PrefsService {
   static List<String> get blockedUserIds => _prefs.getStringList('blockedUserIds') ?? [];
   static Future<void> setBlockedUserIds(List<String> ids) async => await _prefs.setStringList('blockedUserIds', ids);
 
+  // Emergency contacts (stored as "Name|Phone")
+  static List<String> get emergencyContacts => _prefs.getStringList('emergencyContacts') ?? [];
+  static Future<void> setEmergencyContacts(List<String> contacts) async => await _prefs.setStringList('emergencyContacts', contacts);
+
   static void logout() {
     final dark = isDarkMode;
     final font = fontSizeIndex;
