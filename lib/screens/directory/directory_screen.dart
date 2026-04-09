@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../models/models.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
 import '../../utils/app_colors.dart';
+import '../../utils/prefs_service.dart';
+import '../chat/chat_screen.dart';
 
 class DirectoryScreen extends StatefulWidget {
   const DirectoryScreen({super.key});
@@ -13,15 +17,58 @@ class DirectoryScreen extends StatefulWidget {
 class _DirectoryScreenState extends State<DirectoryScreen> with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
   String _search = '';
+  Set<String> _blockedIds = {};
 
   @override
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 2, vsync: this);
+    _blockedIds = PrefsService.blockedUserIds.toSet();
   }
 
   @override
   void dispose() { _tabCtrl.dispose(); super.dispose(); }
+
+  Future<void> _callResident(Resident r) async {
+    final uri = Uri(scheme: 'tel', path: r.phone);
+    if (await canLaunchUrl(uri)) {
+      await launchUrl(uri);
+    }
+  }
+
+  Future<void> _toggleBlock(Resident r) async {
+    final isBlocked = _blockedIds.contains(r.id);
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(isBlocked ? 'Unblock ${r.name}?' : 'Block ${r.name}?'),
+        content: Text(
+          isBlocked
+              ? '${r.name} will be able to message and call you again.'
+              : "${r.name} won't be able to message or call you.",
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(isBlocked ? 'Unblock' : 'Block',
+                style: TextStyle(color: isBlocked ? AppColors.statusSuccess : AppColors.statusError)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() {
+        if (isBlocked) {
+          _blockedIds.remove(r.id);
+        } else {
+          _blockedIds.add(r.id);
+        }
+      });
+      await PrefsService.setBlockedUserIds(_blockedIds.toList());
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +123,7 @@ class _DirectoryScreenState extends State<DirectoryScreen> with SingleTickerProv
                           itemCount: residents.length,
                           itemBuilder: (_, i) {
                             final r = residents[i];
+                            final isBlocked = _blockedIds.contains(r.id);
                             // Alphabetical section header
                             final showHeader = i == 0 || r.name[0].toUpperCase() != residents[i - 1].name[0].toUpperCase();
                             return Column(
@@ -90,55 +138,123 @@ class _DirectoryScreenState extends State<DirectoryScreen> with SingleTickerProv
                                   margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
                                   child: Padding(
                                     padding: const EdgeInsets.all(12),
-                                    child: Row(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        CircleAvatar(
-                                          radius: 22,
-                                          backgroundColor: Color(r.avatarColor),
-                                          child: Text(r.name[0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                        Row(
                                           children: [
-                                            Row(children: [
-                                              Text(r.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
-                                              if (r.isAdmin) ...[
-                                                const SizedBox(width: 6),
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                                                  decoration: BoxDecoration(color: cs.primaryContainer, borderRadius: BorderRadius.circular(4)),
-                                                  child: Text('Admin', style: TextStyle(fontSize: 10, color: cs.primary, fontWeight: FontWeight.w600)),
+                                            CircleAvatar(
+                                              radius: 22,
+                                              backgroundColor: Color(r.avatarColor),
+                                              child: Text(r.name[0], style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            Expanded(child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Row(children: [
+                                                  Text(r.name, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15)),
+                                                  if (r.isAdmin) ...[
+                                                    const SizedBox(width: 6),
+                                                    Container(
+                                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                                      decoration: BoxDecoration(color: cs.primaryContainer, borderRadius: BorderRadius.circular(4)),
+                                                      child: Text('Admin', style: TextStyle(fontSize: 10, color: cs.primary, fontWeight: FontWeight.w600)),
+                                                    ),
+                                                  ],
+                                                ]),
+                                              ],
+                                            )),
+                                            // Flat number prominently
+                                            Container(
+                                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                              decoration: BoxDecoration(
+                                                color: cs.primaryContainer.withValues(alpha: 0.5),
+                                                borderRadius: BorderRadius.circular(8),
+                                              ),
+                                              child: Text(r.flat, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.primary)),
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 10),
+                                        // Action buttons row or blocked badge
+                                        if (isBlocked)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                            decoration: BoxDecoration(
+                                              color: AppColors.statusError.withValues(alpha: 0.1),
+                                              borderRadius: BorderRadius.circular(8),
+                                              border: Border.all(color: AppColors.statusError.withValues(alpha: 0.4)),
+                                            ),
+                                            child: Row(
+                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              children: [
+                                                Row(
+                                                  children: [
+                                                    Icon(Icons.block, size: 14, color: AppColors.statusError),
+                                                    const SizedBox(width: 6),
+                                                    Text('Blocked', style: TextStyle(fontSize: 12, color: AppColors.statusError, fontWeight: FontWeight.w600)),
+                                                  ],
+                                                ),
+                                                TextButton(
+                                                  onPressed: () => _toggleBlock(r),
+                                                  style: TextButton.styleFrom(
+                                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                    minimumSize: Size.zero,
+                                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                  ),
+                                                  child: Text('Unblock', style: TextStyle(fontSize: 12, color: AppColors.statusSuccess)),
                                                 ),
                                               ],
-                                            ]),
-                                            const SizedBox(height: 2),
-                                            Text(r.phone, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                                          ],
-                                        )),
-                                        // Flat number prominently
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                          decoration: BoxDecoration(
-                                            color: cs.primaryContainer.withValues(alpha: 0.5),
-                                            borderRadius: BorderRadius.circular(8),
+                                            ),
+                                          )
+                                        else
+                                          Row(
+                                            children: [
+                                              // Message button
+                                              Expanded(
+                                                child: OutlinedButton.icon(
+                                                  onPressed: () => Navigator.push(context, MaterialPageRoute(
+                                                    builder: (_) => ChatScreen(
+                                                      otherName: r.name,
+                                                      otherFlat: r.flat,
+                                                      otherId: r.id,
+                                                    ),
+                                                  )),
+                                                  icon: const Icon(Icons.message, size: 16, color: AppColors.primaryAmber),
+                                                  label: const Text('Message', style: TextStyle(fontSize: 12, color: AppColors.primaryAmber)),
+                                                  style: OutlinedButton.styleFrom(
+                                                    side: const BorderSide(color: AppColors.amberBorder),
+                                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              // Call button (uses url_launcher, number hidden)
+                                              Expanded(
+                                                child: OutlinedButton.icon(
+                                                  onPressed: () => _callResident(r),
+                                                  icon: const Icon(Icons.phone, size: 16, color: AppColors.statusSuccess),
+                                                  label: const Text('Call', style: TextStyle(fontSize: 12, color: AppColors.statusSuccess)),
+                                                  style: OutlinedButton.styleFrom(
+                                                    side: const BorderSide(color: AppColors.greenBorder),
+                                                    padding: const EdgeInsets.symmetric(vertical: 8),
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 8),
+                                              // Block button
+                                              IconButton(
+                                                onPressed: () => _toggleBlock(r),
+                                                icon: Icon(
+                                                  Icons.more_vert,
+                                                  color: AppColors.textTertiary,
+                                                  size: 20,
+                                                ),
+                                                tooltip: 'More',
+                                              ),
+                                            ],
                                           ),
-                                          child: Text(r.flat, style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: cs.primary)),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        // Quick action buttons
-                                        IconButton(
-                                          icon: const Icon(Icons.phone, color: AppColors.statusSuccess, size: 20),
-                                          onPressed: () => showSnack(context, 'Calling ${r.name}...'),
-                                          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                                          padding: EdgeInsets.zero,
-                                        ),
-                                        IconButton(
-                                          icon: Icon(Icons.chat, color: AppColors.statusSuccess, size: 20),
-                                          onPressed: () => showSnack(context, 'Opening WhatsApp for ${r.name}...'),
-                                          constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
-                                          padding: EdgeInsets.zero,
-                                        ),
                                       ],
                                     ),
                                   ),

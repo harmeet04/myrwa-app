@@ -101,6 +101,10 @@ class PrefsService {
     _prefs.setStringList('paidBillIds', l);
   }
 
+  // Blocked user IDs
+  static List<String> get blockedUserIds => _prefs.getStringList('blockedUserIds') ?? [];
+  static Future<void> setBlockedUserIds(List<String> ids) async => await _prefs.setStringList('blockedUserIds', ids);
+
   static void logout() {
     final dark = isDarkMode;
     final font = fontSizeIndex;
