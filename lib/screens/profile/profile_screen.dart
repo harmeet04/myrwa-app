@@ -4,6 +4,7 @@ import '../../utils/prefs_service.dart';
 import '../../utils/helpers.dart';
 import '../../utils/locale_provider.dart';
 import '../../services/auth_service.dart';
+import '../../services/firestore_service.dart';
 import '../../utils/app_colors.dart';
 import '../auth/auth_screen.dart';
 
@@ -165,6 +166,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
           ),
+          const SizedBox(height: 12),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: TextButton.icon(
+              onPressed: () => _deleteAccount(context),
+              icon: const Icon(Icons.delete_forever, color: AppColors.statusError, size: 20),
+              label: const Text('Delete Account', style: TextStyle(color: AppColors.statusError, fontSize: 13)),
+            ),
+          ),
           const SizedBox(height: 32),
         ],
       ),
@@ -249,6 +259,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _deleteAccount(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: const Text(
+          'This will permanently delete your account and all associated data. This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.statusError),
+            onPressed: () async {
+              try {
+                final user = AuthService.currentUser;
+                if (user != null) {
+                  // Delete user doc from Firestore
+                  await FirestoreService.deleteDoc('users', user.uid);
+                  // Delete Firebase Auth account
+                  await user.delete();
+                }
+                await AuthService.signOut();
+                if (!context.mounted) return;
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => AuthScreen(onThemeToggle: widget.onThemeToggle)),
+                  (_) => false,
+                );
+              } catch (e) {
+                if (!context.mounted) return;
+                Navigator.pop(context);
+                showSnack(context, 'Failed to delete account: $e', isError: true);
+              }
+            },
+            child: const Text('Delete'),
+          ),
+        ],
       ),
     );
   }
