@@ -168,7 +168,7 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   /// Check if this phone number has pre-registered data.
-  /// If yes, auto-fill profile and save directly — skip steps 2 & 3.
+  /// If yes, pre-fill all fields and save directly — skip manual steps.
   Future<bool> _tryAutoFillFromPreRegistered() async {
     final phone = _phoneCtrl.text;
     if (phone.isEmpty) return false;
@@ -176,7 +176,7 @@ class _AuthScreenState extends State<AuthScreen> {
     final data = await FirestoreService.lookupPreRegisteredUser(phone);
     if (data == null) return false;
 
-    // Pre-registered user found — auto-complete profile
+    // Pre-registered user found — save profile and go home
     try {
       await AuthService.saveUserProfile(
         name: data['name'] ?? '',
@@ -188,7 +188,14 @@ class _AuthScreenState extends State<AuthScreen> {
       );
       await NotificationService.init();
       return true;
-    } catch (_) {
+    } catch (e) {
+      debugPrint('Pre-register auto-fill error: $e');
+      // Fallback: pre-fill form fields so user can manually confirm
+      _nameCtrl.text = data['name'] ?? '';
+      _flatCtrl.text = data['flat'] ?? '';
+      _selectedSociety = data['society'] ?? MockData.societyNames[0];
+      _communityType = data['communityType'] ?? 'society';
+      _loginAsAdmin = data['isAdmin'] ?? false;
       return false;
     }
   }
@@ -508,26 +515,16 @@ class _AuthScreenState extends State<AuthScreen> {
         controller: _flatCtrl,
         textCapitalization: TextCapitalization.characters,
         decoration: InputDecoration(
-          labelText: _isSector ? 'House Number (e.g. 42-B)' : 'Flat Number (e.g. A-101)',
+          labelText: _isSector ? 'House Number (e.g. 1323)' : 'Flat Number (e.g. A-101)',
           prefixIcon: const Icon(Icons.home),
         ),
-      ),
-      const SizedBox(height: AppSpacing.lg),
-      CheckboxListTile(
-        title: const Text('Login as Admin (Secretary/Committee)'),
-        subtitle: const Text('For demo: enables admin features', style: TextStyle(fontSize: 12)),
-        value: _loginAsAdmin,
-        activeColor: AppColors.primaryAmber,
-        onChanged: (v) => setState(() => _loginAsAdmin = v!),
-        contentPadding: EdgeInsets.zero,
-        controlAffinity: ListTileControlAffinity.leading,
       ),
       const SizedBox(height: AppSpacing.xl),
       _buildActionButton(
         label: 'Next',
         onPressed: () {
           if (_nameCtrl.text.isEmpty || _flatCtrl.text.isEmpty) {
-            showSnack(context, 'Please fill name and flat/house number', isError: true);
+            showSnack(context, 'Please fill name and ${_isSector ? "house number" : "flat number"}', isError: true);
             return;
           }
           setState(() => _step = 3);
@@ -553,14 +550,6 @@ class _AuthScreenState extends State<AuthScreen> {
             .map((s) => DropdownMenuItem(value: s, child: Text(s)))
             .toList(),
         onChanged: (v) => setState(() => _selectedSociety = v!),
-      ),
-      const SizedBox(height: AppSpacing.lg),
-      TextField(
-        decoration: InputDecoration(
-          labelText: _isSector ? 'Area Code (optional)' : 'Society Code (optional)',
-          prefixIcon: const Icon(Icons.vpn_key),
-          hintText: _isSector ? 'Enter code shared by your area' : 'Enter code shared by your society',
-        ),
       ),
       const SizedBox(height: AppSpacing.xxl),
       _buildActionButton(

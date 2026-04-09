@@ -1,0 +1,106 @@
+<h2>Navigation & Home Layout</h2>
+<p class="subtitle">How should the main app navigation and home screen be organized?</p>
+
+<div class="cards">
+  <div class="card" data-choice="hub-focused" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:20px;background:linear-gradient(135deg,#fffbeb,#fef3c7);">
+      <div style="background:#fffdf7;border-radius:20px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,0.05);border:1px solid #fde68a;max-width:320px;margin:0 auto;">
+        <!-- Simplified bottom nav -->
+        <div style="font-size:11px;color:#78716c;text-align:center;margin-bottom:12px;">HOME SCREEN</div>
+
+        <!-- Greeting -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ea580c);display:flex;align-items:center;justify-content:center;font-size:18px;">🏠</div>
+          <div><div style="font-weight:700;font-size:14px;color:#292524;">Good morning!</div><div style="font-size:11px;color:#78716c;">Greenview Heights</div></div>
+        </div>
+
+        <!-- Summary banner -->
+        <div style="background:linear-gradient(135deg,#fbbf24,#f59e0b);border-radius:14px;padding:14px;color:#451a03;margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:600;">☀️ 2 visitors • 1 package • 3 events</div>
+        </div>
+
+        <!-- Quick Actions 2x2 -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:12px;">
+          <div style="background:#fef3c7;border-radius:10px;padding:10px;text-align:center;font-size:11px;border:1px solid #fde68a;">🚶 Visitors</div>
+          <div style="background:#ecfdf5;border-radius:10px;padding:10px;text-align:center;font-size:11px;border:1px solid #a7f3d0;">📦 Packages</div>
+          <div style="background:#eff6ff;border-radius:10px;padding:10px;text-align:center;font-size:11px;border:1px solid #bfdbfe;">🧾 Bills</div>
+          <div style="background:#fdf2f8;border-radius:10px;padding:10px;text-align:center;font-size:11px;border:1px solid #fbcfe8;">📢 Notices</div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div style="font-size:11px;font-weight:700;color:#292524;margin-bottom:6px;">Recent Activity</div>
+        <div style="background:#f5f5f4;border-radius:8px;padding:8px;font-size:10px;color:#57534e;margin-bottom:4px;">🟢 Visitor Rahul approved • 2m ago</div>
+        <div style="background:#f5f5f4;border-radius:8px;padding:8px;font-size:10px;color:#57534e;">📦 Amazon package arrived • 1h ago</div>
+
+        <!-- Bottom Nav: 4 tabs -->
+        <div style="display:flex;justify-content:space-around;margin-top:14px;padding-top:10px;border-top:1px solid #e7e5e4;">
+          <div style="text-align:center;"><div style="font-size:16px;">🏠</div><div style="font-size:9px;color:#f59e0b;font-weight:700;">Home</div></div>
+          <div style="text-align:center;"><div style="font-size:16px;">👥</div><div style="font-size:9px;color:#78716c;">Community</div></div>
+          <div style="text-align:center;"><div style="font-size:16px;">🛎️</div><div style="font-size:9px;color:#78716c;">Services</div></div>
+          <div style="text-align:center;"><div style="font-size:16px;">⚙️</div><div style="font-size:9px;color:#78716c;">More</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — 4-Tab Hub (Simplified)</h3>
+      <p>Merge Alerts into Home as a feed. <strong>Home</strong> = dashboard + activity feed. <strong>Community</strong> = notices, chat, events, polls, directory. <strong>Services</strong> = visitors, bills, packages, facilities. <strong>More</strong> = profile, settings, admin. Fewer tabs = less decision paralysis.</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="action-first" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:20px;background:linear-gradient(135deg,#fffbeb,#fef3c7);">
+      <div style="background:#fffdf7;border-radius:20px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,0.05);border:1px solid #fde68a;max-width:320px;margin:0 auto;">
+        <div style="font-size:11px;color:#78716c;text-align:center;margin-bottom:12px;">HOME SCREEN</div>
+
+        <!-- Greeting + notification -->
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+          <div style="width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#f59e0b,#ea580c);display:flex;align-items:center;justify-content:center;font-size:18px;">🏠</div>
+          <div style="flex:1;"><div style="font-weight:700;font-size:14px;color:#292524;">Good morning!</div><div style="font-size:11px;color:#78716c;">Greenview Heights</div></div>
+          <div style="position:relative;width:36px;height:36px;border-radius:10px;background:#fef3c7;display:flex;align-items:center;justify-content:center;font-size:16px;border:1px solid #fde68a;">🔔<div style="position:absolute;top:-3px;right:-3px;width:8px;height:8px;background:#ef4444;border-radius:50%;"></div></div>
+        </div>
+
+        <!-- Pending Actions (most important) -->
+        <div style="font-size:11px;font-weight:700;color:#292524;margin-bottom:6px;">⚡ Needs Your Attention</div>
+        <div style="background:#fef3c7;border-radius:10px;padding:10px;margin-bottom:6px;border:1px solid #fde68a;display:flex;align-items:center;gap:8px;">
+          <div style="font-size:18px;">🚶</div>
+          <div style="flex:1;"><div style="font-size:12px;font-weight:600;color:#292524;">Rahul wants to visit</div><div style="font-size:10px;color:#78716c;">Delivery • 5 min ago</div></div>
+          <div style="display:flex;gap:4px;">
+            <div style="background:#22c55e;color:#fff;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:600;">✓</div>
+            <div style="background:#ef4444;color:#fff;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:600;">✗</div>
+          </div>
+        </div>
+        <div style="background:#eff6ff;border-radius:10px;padding:10px;margin-bottom:12px;border:1px solid #bfdbfe;display:flex;align-items:center;gap:8px;">
+          <div style="font-size:18px;">🧾</div>
+          <div style="flex:1;"><div style="font-size:12px;font-weight:600;color:#292524;">Maintenance due</div><div style="font-size:10px;color:#78716c;">₹3,500 • Due Apr 15</div></div>
+          <div style="background:#f59e0b;color:#fff;border-radius:6px;padding:4px 8px;font-size:10px;font-weight:600;">Pay</div>
+        </div>
+
+        <!-- Quick Access row -->
+        <div style="display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;">
+          <div style="min-width:60px;background:#fef3c7;border-radius:10px;padding:8px;text-align:center;font-size:10px;border:1px solid #fde68a;">🚶<br>Visitors</div>
+          <div style="min-width:60px;background:#ecfdf5;border-radius:10px;padding:8px;text-align:center;font-size:10px;border:1px solid #a7f3d0;">📦<br>Parcels</div>
+          <div style="min-width:60px;background:#eff6ff;border-radius:10px;padding:8px;text-align:center;font-size:10px;border:1px solid #bfdbfe;">📢<br>Notices</div>
+          <div style="min-width:60px;background:#fdf2f8;border-radius:10px;padding:8px;text-align:center;font-size:10px;border:1px solid #fbcfe8;">🏋️<br>Booking</div>
+          <div style="min-width:60px;background:#f5f3ff;border-radius:10px;padding:8px;text-align:center;font-size:10px;border:1px solid #ddd6fe;">🗳️<br>Polls</div>
+        </div>
+
+        <!-- Community snapshot -->
+        <div style="font-size:11px;font-weight:700;color:#292524;margin-bottom:6px;">🏘️ Community</div>
+        <div style="background:#f5f5f4;border-radius:8px;padding:8px;font-size:10px;color:#57534e;margin-bottom:4px;">📢 AGM Meeting scheduled for Sunday</div>
+        <div style="background:#f5f5f4;border-radius:8px;padding:8px;font-size:10px;color:#57534e;">🗳️ Water tank cleaning poll — vote now!</div>
+
+        <!-- Bottom Nav: 4 tabs -->
+        <div style="display:flex;justify-content:space-around;margin-top:14px;padding-top:10px;border-top:1px solid #e7e5e4;">
+          <div style="text-align:center;"><div style="font-size:16px;">🏠</div><div style="font-size:9px;color:#f59e0b;font-weight:700;">Home</div></div>
+          <div style="text-align:center;"><div style="font-size:16px;">👥</div><div style="font-size:9px;color:#78716c;">Community</div></div>
+          <div style="text-align:center;"><div style="font-size:16px;">🛎️</div><div style="font-size:9px;color:#78716c;">Services</div></div>
+          <div style="text-align:center;"><div style="font-size:16px;">⚙️</div><div style="font-size:9px;color:#78716c;">More</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Action-First Home (Recommended)</h3>
+      <p>Home screen prioritizes <strong>things that need your attention</strong> — pending visitors, due bills, unread notices — with inline actions (approve/reject/pay). Quick access as a horizontal scrollable row. Community feed below. <strong>Most important stuff first, everything reachable in 1-2 taps.</strong></p>
+    </div>
+  </div>
+</div>

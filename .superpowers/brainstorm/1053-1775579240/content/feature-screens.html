@@ -1,0 +1,142 @@
+<h2>Feature Screen Style</h2>
+<p class="subtitle">How should the main feature screens (Complaints, Notices, Visitors) be styled?</p>
+
+<div class="cards">
+  <div class="card" data-choice="card-feed" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:20px;background:linear-gradient(135deg,#fffbeb,#fef3c7);">
+      <div style="background:#fffdf7;border-radius:20px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,0.05);border:1px solid #fde68a;max-width:320px;margin:0 auto;">
+        <div style="font-size:11px;color:#78716c;text-align:center;margin-bottom:10px;">COMPLAINTS</div>
+
+        <!-- Filter chips -->
+        <div style="display:flex;gap:6px;margin-bottom:12px;overflow-x:auto;">
+          <div style="background:#f59e0b;color:#fff;border-radius:20px;padding:4px 12px;font-size:10px;font-weight:600;white-space:nowrap;">All</div>
+          <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:20px;padding:4px 12px;font-size:10px;color:#92400e;white-space:nowrap;">🔴 Open</div>
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:20px;padding:4px 12px;font-size:10px;color:#1e40af;white-space:nowrap;">🔵 In Progress</div>
+          <div style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:20px;padding:4px 12px;font-size:10px;color:#065f46;white-space:nowrap;">✅ Resolved</div>
+        </div>
+
+        <!-- Complaint card 1 -->
+        <div style="background:#fff;border-radius:14px;padding:14px;margin-bottom:8px;border:1px solid #e7e5e4;box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:32px;height:32px;border-radius:8px;background:#fef2f2;display:flex;align-items:center;justify-content:center;font-size:14px;">🔧</div>
+              <div>
+                <div style="font-size:13px;font-weight:600;color:#292524;">Water leakage in lobby</div>
+                <div style="font-size:10px;color:#78716c;">Flat B-204 • 2 days ago</div>
+              </div>
+            </div>
+            <div style="background:#fef2f2;color:#dc2626;border-radius:6px;padding:2px 8px;font-size:9px;font-weight:700;">HIGH</div>
+          </div>
+          <div style="font-size:11px;color:#57534e;margin-bottom:8px;">Continuous dripping near elevator area causing slippery floor...</div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div style="width:6px;height:6px;border-radius:50%;background:#f59e0b;"></div>
+              <span style="font-size:10px;color:#92400e;font-weight:500;">In Progress</span>
+            </div>
+            <div style="font-size:10px;color:#a8a29e;">💬 2 replies</div>
+          </div>
+        </div>
+
+        <!-- Complaint card 2 -->
+        <div style="background:#fff;border-radius:14px;padding:14px;margin-bottom:8px;border:1px solid #e7e5e4;box-shadow:0 1px 4px rgba(0,0,0,0.04);">
+          <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:32px;height:32px;border-radius:8px;background:#ecfdf5;display:flex;align-items:center;justify-content:center;font-size:14px;">💡</div>
+              <div>
+                <div style="font-size:13px;font-weight:600;color:#292524;">Parking light not working</div>
+                <div style="font-size:10px;color:#78716c;">Flat A-101 • 5 days ago</div>
+              </div>
+            </div>
+            <div style="background:#fef3c7;color:#92400e;border-radius:6px;padding:2px 8px;font-size:9px;font-weight:700;">MED</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="display:flex;align-items:center;gap:4px;">
+              <div style="width:6px;height:6px;border-radius:50%;background:#22c55e;"></div>
+              <span style="font-size:10px;color:#065f46;font-weight:500;">Resolved</span>
+            </div>
+            <div style="font-size:10px;color:#a8a29e;">💬 4 replies</div>
+          </div>
+        </div>
+
+        <!-- FAB -->
+        <div style="text-align:right;margin-top:8px;">
+          <div style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#f59e0b,#ea580c);color:#fff;border-radius:14px;padding:10px 16px;font-size:12px;font-weight:600;box-shadow:0 4px 12px rgba(245,158,11,0.4);">➕ New Complaint</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — Rich Card Feed (Recommended)</h3>
+      <p>Each item is a full card with icon, preview text, status dot, priority badge, and reply count. Horizontal filter chips at top. Expandable cards tap into detail. <strong>Scannable and informative at a glance.</strong></p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="compact-list" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:20px;background:linear-gradient(135deg,#fffbeb,#fef3c7);">
+      <div style="background:#fffdf7;border-radius:20px;padding:16px;box-shadow:0 2px 12px rgba(0,0,0,0.05);border:1px solid #fde68a;max-width:320px;margin:0 auto;">
+        <div style="font-size:11px;color:#78716c;text-align:center;margin-bottom:10px;">COMPLAINTS</div>
+
+        <!-- Segmented control -->
+        <div style="display:flex;background:#f5f5f4;border-radius:10px;padding:3px;margin-bottom:12px;">
+          <div style="flex:1;background:#f59e0b;color:#fff;border-radius:8px;padding:6px;text-align:center;font-size:11px;font-weight:600;">All (5)</div>
+          <div style="flex:1;padding:6px;text-align:center;font-size:11px;color:#78716c;">Open (2)</div>
+          <div style="flex:1;padding:6px;text-align:center;font-size:11px;color:#78716c;">Done (3)</div>
+        </div>
+
+        <!-- Compact list items -->
+        <div style="border-bottom:1px solid #f5f5f4;padding:10px 0;display:flex;align-items:center;gap:10px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0;"></div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;color:#292524;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Water leakage in lobby</div>
+            <div style="font-size:10px;color:#78716c;">B-204 • In Progress • 2d</div>
+          </div>
+          <div style="font-size:14px;">›</div>
+        </div>
+
+        <div style="border-bottom:1px solid #f5f5f4;padding:10px 0;display:flex;align-items:center;gap:10px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#f59e0b;flex-shrink:0;"></div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;color:#292524;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Parking light not working</div>
+            <div style="font-size:10px;color:#78716c;">A-101 • Resolved • 5d</div>
+          </div>
+          <div style="font-size:14px;">›</div>
+        </div>
+
+        <div style="border-bottom:1px solid #f5f5f4;padding:10px 0;display:flex;align-items:center;gap:10px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#ef4444;flex-shrink:0;"></div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;color:#292524;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Noisy construction after 10pm</div>
+            <div style="font-size:10px;color:#78716c;">C-502 • Open • 1d</div>
+          </div>
+          <div style="font-size:14px;">›</div>
+        </div>
+
+        <div style="border-bottom:1px solid #f5f5f4;padding:10px 0;display:flex;align-items:center;gap:10px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;"></div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;color:#292524;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Lift maintenance request</div>
+            <div style="font-size:10px;color:#78716c;">D-102 • Resolved • 7d</div>
+          </div>
+          <div style="font-size:14px;">›</div>
+        </div>
+
+        <div style="padding:10px 0;display:flex;align-items:center;gap:10px;">
+          <div style="width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;"></div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;color:#292524;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Broken gate intercom</div>
+            <div style="font-size:10px;color:#78716c;">A-303 • Resolved • 10d</div>
+          </div>
+          <div style="font-size:14px;">›</div>
+        </div>
+
+        <!-- FAB -->
+        <div style="text-align:right;margin-top:10px;">
+          <div style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#f59e0b,#ea580c);color:#fff;border-radius:14px;padding:10px 16px;font-size:12px;font-weight:600;box-shadow:0 4px 12px rgba(245,158,11,0.4);">➕ New</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — Compact List</h3>
+      <p>Dense list with colored status dots, segmented tab control. Shows more items on screen. Tap to expand into full detail page. <strong>Efficient for power users with many items.</strong> Better for screens with 10+ items.</p>
+    </div>
+  </div>
+</div>

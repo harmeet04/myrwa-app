@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(flutter analyze:*)",
+      "Bash(flutter pub:*)",
+      "Bash(bash:*)",
+      "Bash(flutter run:*)",
+      "Bash(flutter devices:*)",
+      "Bash(flutterfire configure:*)",
+      "Bash(dart pub:*)",
+      "Bash(flutter test:*)",
+      "Bash(flutter build:*)",
+      "Bash(ipconfig)",
+      "Bash(python -m http.server 8080 --bind 0.0.0.0)",
+      "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(c['oauth_client']\\) for c in d.get\\('client',[]\\) if 'oauth_client' in c]\")",
+      "Bash(taskkill //F //IM python.exe)"
+    ]
+  }
+}

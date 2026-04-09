@@ -23,7 +23,7 @@ class AuthService {
       phoneNumber: '+91$phoneNumber',
       timeout: const Duration(seconds: 60),
       verificationCompleted: onAutoVerify,
-      verificationFailed: (e) => onError(e.message ?? 'Verification failed'),
+      verificationFailed: (e) => onError('[${e.code}] ${e.message ?? 'Unknown error'}'),
       codeSent: onCodeSent,
       codeAutoRetrievalTimeout: (_) {},
     );
