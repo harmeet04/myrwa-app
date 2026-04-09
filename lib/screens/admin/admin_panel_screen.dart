@@ -3,6 +3,9 @@ import '../../models/models.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
 import '../../utils/app_colors.dart';
+import '../complaints/complaints_screen.dart';
+import '../notices/notices_screen.dart';
+import '../events/events_screen.dart';
 
 class AdminPanelScreen extends StatelessWidget {
   const AdminPanelScreen({super.key});
@@ -27,10 +30,13 @@ class AdminPanelScreen extends StatelessWidget {
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _ManageResidentsPage()))),
           _AdminTile(icon: Icons.report, title: 'All Complaints',
             subtitle: 'Respond and manage complaints', color: AppColors.statusWarning,
-            onTap: () => Navigator.pop(context)),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ComplaintsScreen()))),
           _AdminTile(icon: Icons.campaign, title: 'Manage Notices',
             subtitle: 'Pin/unpin, post announcements', color: AppColors.primaryAmber,
-            onTap: () => Navigator.pop(context)),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const NoticesScreen()))),
+          _AdminTile(icon: Icons.event, title: 'Manage Events',
+            subtitle: 'Create and manage events', color: const Color(0xFF7C3AED),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EventsScreen()))),
         ],
       ),
     );
