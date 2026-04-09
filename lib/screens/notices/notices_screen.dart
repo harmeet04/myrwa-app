@@ -109,6 +109,7 @@ class _NoticesScreenState extends State<NoticesScreen> {
                     isNew: _isNew(filtered[i]),
                     categoryColors: _categoryColors(filtered[i].category),
                     onTap: () => _showDetail(context, filtered[i]),
+                    onCommentTap: () => _showComments(context, filtered[i]),
                   ),
                 );
               },
@@ -161,6 +162,157 @@ class _NoticesScreenState extends State<NoticesScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (_) => _NoticeDetailSheet(notice: n),
+    );
+  }
+
+  void _showComments(BuildContext context, Notice n) {
+    final commentCtrl = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setBS) => Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.vertical(
+                top: Radius.circular(AppSpacing.radiusModal)),
+          ),
+          padding: EdgeInsets.fromLTRB(
+              AppSpacing.xl,
+              AppSpacing.xl,
+              AppSpacing.xl,
+              MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.xl),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                      color: AppColors.cardBorder,
+                      borderRadius: BorderRadius.circular(2)),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Text(
+                'Comments (${n.comments.length})',
+                style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              if (n.comments.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: Text(
+                      'No comments yet. Be the first!',
+                      style: TextStyle(color: AppColors.textSecondary),
+                    ),
+                  ),
+                )
+              else
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 250),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: n.comments.length,
+                    itemBuilder: (_, i) {
+                      final c = n.comments[i];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 10),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              radius: 14,
+                              backgroundColor: AppColors.amberBg,
+                              child: Text(
+                                c.author[0].toUpperCase(),
+                                style: const TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.primaryAmber,
+                                    fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Text(
+                                        c.author,
+                                        style: const TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 13),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        timeAgo(c.date),
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            color: AppColors.textTertiary),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    c.text,
+                                    style: const TextStyle(fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              const Divider(),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: commentCtrl,
+                      decoration: const InputDecoration(
+                        hintText: 'Write a comment...',
+                        contentPadding:
+                            EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        isDense: true,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    onPressed: () {
+                      if (commentCtrl.text.trim().isEmpty) return;
+                      setBS(() {
+                        n.comments.add(Comment(
+                          id: DateTime.now().millisecondsSinceEpoch.toString(),
+                          author: PrefsService.userName.isEmpty
+                              ? 'You'
+                              : PrefsService.userName,
+                          text: commentCtrl.text.trim(),
+                          date: DateTime.now(),
+                        ));
+                      });
+                      commentCtrl.clear();
+                    },
+                    icon: const Icon(Icons.send, color: AppColors.primaryAmber),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -456,12 +608,14 @@ class _NoticeCard extends StatelessWidget {
   final bool isNew;
   final (Color bg, Color border) categoryColors;
   final VoidCallback onTap;
+  final VoidCallback onCommentTap;
 
   const _NoticeCard({
     required this.notice,
     required this.isNew,
     required this.categoryColors,
     required this.onTap,
+    required this.onCommentTap,
   });
 
   @override
@@ -564,12 +718,19 @@ class _NoticeCard extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(width: AppSpacing.md),
-                  const Text('💬', style: TextStyle(fontSize: 13)),
-                  const SizedBox(width: 4),
-                  Text(
-                    '${notice.comments.length}',
-                    style: const TextStyle(
-                        fontSize: 11, color: AppColors.textTertiary),
+                  GestureDetector(
+                    onTap: onCommentTap,
+                    child: Row(
+                      children: [
+                        const Text('💬', style: TextStyle(fontSize: 13)),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${notice.comments.length}',
+                          style: const TextStyle(
+                              fontSize: 11, color: AppColors.textTertiary),
+                        ),
+                      ],
+                    ),
                   ),
                   const Spacer(),
                   if (PrefsService.isAdmin)
