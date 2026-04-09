@@ -2,9 +2,9 @@ import '../models/models.dart';
 
 class MockData {
   static const List<String> societyNames = [
-    'Sunrise Residency', 'Green Valley Apartments', 'Royal Palms Society',
-    'Shanti Nagar CHS', 'Paradise Heights', 'Lakeview Towers',
-    'Sai Krupa Apartments', 'Ganesh Nagar Society',
+    'Sector 15 Part 2, Gurgaon', 'Sunrise Residency', 'Green Valley Apartments',
+    'Royal Palms Society', 'Shanti Nagar CHS', 'Paradise Heights',
+    'Lakeview Towers', 'Sai Krupa Apartments', 'Ganesh Nagar Society',
   ];
 
   static const List<String> residentNames = [

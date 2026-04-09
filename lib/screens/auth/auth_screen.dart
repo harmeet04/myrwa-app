@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../../services/auth_service.dart';
 import '../../services/notification_service.dart';
+import '../../services/firestore_service.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
 import '../../utils/app_colors.dart';
@@ -52,7 +53,8 @@ class _AuthScreenState extends State<AuthScreen> {
       onError: (error) {
         if (!mounted) return;
         setState(() { _loading = false; });
-        showSnack(context, error, isError: true);
+        debugPrint('Phone Auth Error: $error');
+        showSnack(context, 'Auth error: $error', isError: true);
       },
       onAutoVerify: (credential) async {
         if (!mounted) return;
@@ -60,11 +62,15 @@ class _AuthScreenState extends State<AuthScreen> {
           await FirebaseAuth.instance.signInWithCredential(credential);
           final hasProfile = await AuthService.loadUserProfile();
           if (!mounted) return;
-          if (hasProfile) {
+          if (hasProfile) { _goHome(); return; }
+          final autoFilled = await _tryAutoFillFromPreRegistered();
+          if (!mounted) return;
+          if (autoFilled) {
+            showSnack(context, 'Welcome! Your profile was set up automatically.');
             _goHome();
-          } else {
-            setState(() { _loading = false; _step = 2; });
+            return;
           }
+          setState(() { _loading = false; _step = 2; });
         } catch (e) {
           if (!mounted) return;
           setState(() { _loading = false; });
@@ -85,13 +91,23 @@ class _AuthScreenState extends State<AuthScreen> {
         verificationId: _verificationId!,
         otp: _otpCtrl.text,
       );
+      // 1. Check if user already has a profile in Firestore
       final hasProfile = await AuthService.loadUserProfile();
       if (!mounted) return;
       if (hasProfile) {
         _goHome();
-      } else {
-        setState(() { _loading = false; _step = 2; });
+        return;
       }
+      // 2. Check if phone is pre-registered — auto-fill and go home
+      final autoFilled = await _tryAutoFillFromPreRegistered();
+      if (!mounted) return;
+      if (autoFilled) {
+        showSnack(context, 'Welcome! Your profile was set up automatically.');
+        _goHome();
+        return;
+      }
+      // 3. New user — manual profile setup
+      setState(() { _loading = false; _step = 2; });
     } catch (e) {
       if (!mounted) return;
       setState(() { _loading = false; });
@@ -148,6 +164,32 @@ class _AuthScreenState extends State<AuthScreen> {
       if (!mounted) return;
       setState(() { _loading = false; });
       showSnack(context, 'Error saving profile: $e', isError: true);
+    }
+  }
+
+  /// Check if this phone number has pre-registered data.
+  /// If yes, auto-fill profile and save directly — skip steps 2 & 3.
+  Future<bool> _tryAutoFillFromPreRegistered() async {
+    final phone = _phoneCtrl.text;
+    if (phone.isEmpty) return false;
+
+    final data = await FirestoreService.lookupPreRegisteredUser(phone);
+    if (data == null) return false;
+
+    // Pre-registered user found — auto-complete profile
+    try {
+      await AuthService.saveUserProfile(
+        name: data['name'] ?? '',
+        flat: data['flat'] ?? '',
+        phone: phone,
+        society: data['society'] ?? '',
+        communityType: data['communityType'] ?? 'society',
+        isAdmin: data['isAdmin'] ?? false,
+      );
+      await NotificationService.init();
+      return true;
+    } catch (_) {
+      return false;
     }
   }
 

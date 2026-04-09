@@ -9,6 +9,38 @@ class FirestoreService {
   // ──── USERS ────
   static CollectionReference get _users => _db.collection('users');
 
+  /// Look up a pre-registered user by phone number.
+  /// Returns the document data if found, null otherwise.
+  static Future<Map<String, dynamic>?> lookupPreRegisteredUser(String phone) async {
+    final snap = await _db
+        .collection('pre_registered_users')
+        .where('phone', isEqualTo: phone)
+        .limit(1)
+        .get();
+    if (snap.docs.isEmpty) return null;
+    return snap.docs.first.data();
+  }
+
+  /// Seed a pre-registered user (for demo/testing purposes).
+  static Future<void> seedPreRegisteredUser({
+    required String phone,
+    required String name,
+    required String flat,
+    required String society,
+    required String communityType,
+    bool isAdmin = false,
+  }) async {
+    await _db.collection('pre_registered_users').doc(phone).set({
+      'phone': phone,
+      'name': name,
+      'flat': flat,
+      'society': society,
+      'communityType': communityType,
+      'isAdmin': isAdmin,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
+  }
+
   static Stream<QuerySnapshot> residentsStream(String society) {
     return _users.where('society', isEqualTo: society).snapshots();
   }
