@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../models/models.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_spacing.dart';
 import '../../utils/prefs_service.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
+import '../../services/notification_provider.dart';
 import '../../widgets/action_tile.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/warm_card.dart';
@@ -431,6 +433,7 @@ class _GreetingBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final initial = userName.isNotEmpty ? userName[0].toUpperCase() : '\u{1F3E0}';
+    final notifProvider = context.watch<NotificationProvider>();
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
@@ -478,7 +481,11 @@ class _GreetingBar extends StatelessWidget {
           ),
           IconButton(
             onPressed: () {},
-            icon: const Icon(Icons.notifications_outlined, size: 26),
+            icon: Badge(
+              isLabelVisible: notifProvider.totalBadge > 0,
+              label: Text('${notifProvider.totalBadge}'),
+              child: const Icon(Icons.notifications_outlined, size: 26),
+            ),
           ),
         ],
       ),

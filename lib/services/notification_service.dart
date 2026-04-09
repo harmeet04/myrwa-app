@@ -1,9 +1,15 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'auth_service.dart';
+import '../utils/prefs_service.dart';
 
 class NotificationService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+
+  static Function(RemoteMessage)? _onForegroundMessage;
+  static set onForegroundMessage(Function(RemoteMessage) callback) {
+    _onForegroundMessage = callback;
+  }
 
   static Future<void> init() async {
     // Request permission
@@ -21,14 +27,28 @@ class NotificationService {
         await _saveFcmToken(token);
       }
 
+      // Subscribe to relevant topics
+      await subscribeToTopics();
+
       // Listen for token refresh
       _messaging.onTokenRefresh.listen(_saveFcmToken);
     }
 
     // Handle foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      // Could show a local notification here
+      _onForegroundMessage?.call(message);
     });
+  }
+
+  static Future<void> subscribeToTopics() async {
+    final society = PrefsService.societyName.replaceAll(' ', '_').toLowerCase();
+    if (society.isNotEmpty) {
+      await _messaging.subscribeToTopic('society_$society');
+    }
+    final flat = PrefsService.userFlat.replaceAll(' ', '_').toLowerCase();
+    if (flat.isNotEmpty) {
+      await _messaging.subscribeToTopic('flat_${society}_$flat');
+    }
   }
 
   static Future<void> _saveFcmToken(String token) async {

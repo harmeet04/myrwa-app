@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../utils/locale_provider.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/connectivity_banner.dart';
+import '../../services/notification_provider.dart';
+import '../../services/notification_service.dart';
 import 'home_screen.dart';
 import 'community_screen.dart';
 import 'services_screen.dart';
@@ -18,6 +20,17 @@ class MainShell extends StatefulWidget {
 
 class _MainShellState extends State<MainShell> {
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    final notifProvider = context.read<NotificationProvider>();
+    notifProvider.init();
+    NotificationService.onForegroundMessage = (message) {
+      final body = message.notification?.body ?? 'New notification';
+      notifProvider.onNewMessage(body);
+    };
+  }
 
   @override
   Widget build(BuildContext context) {

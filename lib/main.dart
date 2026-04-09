@@ -7,14 +7,18 @@ import 'utils/prefs_service.dart';
 import 'utils/locale_provider.dart';
 import 'screens/splash/splash_screen.dart';
 import 'services/analytics_service.dart';
+import 'services/notification_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await PrefsService.init();
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => LocaleProvider(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LocaleProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
+      ],
       child: const MyApp(),
     ),
   );
