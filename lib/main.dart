@@ -8,6 +8,7 @@ import 'utils/locale_provider.dart';
 import 'screens/splash/splash_screen.dart';
 import 'services/analytics_service.dart';
 import 'services/notification_provider.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,12 +35,16 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   late bool _isDark;
   late double _textScale;
+  final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
   @override
   void initState() {
     super.initState();
     _isDark = PrefsService.isDarkMode;
     _textScale = PrefsService.textScaleFactor;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      NotificationService.setupInteractiveMessage(navigatorKey);
+    });
   }
 
   void _onSettingsChanged() {
@@ -54,6 +59,7 @@ class _MyAppState extends State<MyApp> {
     // Listen to locale changes to rebuild
     context.watch<LocaleProvider>();
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'myRWA',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,

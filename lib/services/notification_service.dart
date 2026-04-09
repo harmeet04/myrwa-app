@@ -1,7 +1,12 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'auth_service.dart';
 import '../utils/prefs_service.dart';
+import '../screens/complaints/complaints_screen.dart';
+import '../screens/notices/notices_screen.dart';
+import '../screens/visitors/visitors_screen.dart';
+import '../screens/bills/bills_screen.dart';
 
 class NotificationService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
@@ -60,5 +65,47 @@ class NotificationService {
       'fcmToken': token,
       'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
     });
+  }
+
+  /// Call after the MaterialApp is built so the navigator is ready.
+  static Future<void> setupInteractiveMessage(
+      GlobalKey<NavigatorState> navigatorKey) async {
+    // App opened from terminated state via notification tap
+    final RemoteMessage? initialMessage = await _messaging.getInitialMessage();
+    if (initialMessage != null) {
+      _handleMessageTap(initialMessage, navigatorKey);
+    }
+
+    // App was in background and notification was tapped
+    FirebaseMessaging.onMessageOpenedApp.listen((message) {
+      _handleMessageTap(message, navigatorKey);
+    });
+  }
+
+  static void _handleMessageTap(
+      RemoteMessage message, GlobalKey<NavigatorState> navigatorKey) {
+    final data = message.data;
+    final type = data['type'] as String?;
+    final navigator = navigatorKey.currentState;
+    if (navigator == null) return;
+
+    switch (type) {
+      case 'complaint':
+        navigator.push(
+            MaterialPageRoute(builder: (_) => const ComplaintsScreen()));
+        break;
+      case 'notice':
+        navigator
+            .push(MaterialPageRoute(builder: (_) => const NoticesScreen()));
+        break;
+      case 'visitor':
+        navigator
+            .push(MaterialPageRoute(builder: (_) => const VisitorsScreen()));
+        break;
+      case 'bill':
+        navigator
+            .push(MaterialPageRoute(builder: (_) => const BillsScreen()));
+        break;
+    }
   }
 }
