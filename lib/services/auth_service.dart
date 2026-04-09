@@ -60,6 +60,7 @@ class AuthService {
     required String society,
     required String communityType,
     bool isAdmin = false,
+    bool isGated = true,
   }) async {
     final user = _auth.currentUser;
     if (user == null) return;
@@ -74,6 +75,7 @@ class AuthService {
       'society': society,
       'communityType': communityType,
       'isAdmin': isAdmin,
+      'isGated': isGated,
       'updatedAt': FieldValue.serverTimestamp(),
     };
 
@@ -112,6 +114,7 @@ class AuthService {
     PrefsService.societyName = d['society'] ?? '';
     PrefsService.communityType = d['communityType'] ?? 'society';
     PrefsService.isAdmin = d['isAdmin'] ?? false;
+    PrefsService.isGatedCommunity = d['isGated'] ?? true;
     PrefsService.isLoggedIn = true;
     PrefsService.userId = user.uid;
     return true;

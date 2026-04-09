@@ -180,6 +180,7 @@ class _AuthScreenState extends State<AuthScreen> {
 
     // Pre-registered user found — save profile and go home
     try {
+      final isGated = data['isGated'] ?? true;
       await AuthService.saveUserProfile(
         name: data['name'] ?? '',
         flat: data['flat'] ?? '',
@@ -187,8 +188,9 @@ class _AuthScreenState extends State<AuthScreen> {
         society: data['society'] ?? '',
         communityType: data['communityType'] ?? 'society',
         isAdmin: data['isAdmin'] ?? false,
+        isGated: isGated,
       );
-      PrefsService.isGatedCommunity = data['isGated'] ?? true;
+      PrefsService.isGatedCommunity = isGated;
       await NotificationService.init();
       return true;
     } catch (e) {
