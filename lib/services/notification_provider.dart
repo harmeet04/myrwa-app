@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../utils/mock_data.dart';
+import '../utils/prefs_service.dart';
 import '../models/models.dart';
 
 class NotificationProvider extends ChangeNotifier {
@@ -15,10 +16,12 @@ class NotificationProvider extends ChangeNotifier {
   String? get latestMessage => _latestMessage;
 
   void init() {
-    // Use mock data counts as initial values
-    _pendingVisitors = MockData.visitors
-        .where((v) => v.status == VisitorStatus.pending)
-        .length;
+    // Only count visitor notifications for gated communities
+    _pendingVisitors = PrefsService.isGatedCommunity
+        ? MockData.visitors
+            .where((v) => v.status == VisitorStatus.pending)
+            .length
+        : 0;
     _pendingComplaints = MockData.complaints
         .where((c) => c.status == ComplaintStatus.open)
         .length;
