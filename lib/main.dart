@@ -9,23 +9,10 @@ import 'screens/splash/splash_screen.dart';
 import 'services/analytics_service.dart';
 import 'services/notification_provider.dart';
 import 'services/notification_service.dart';
-import 'services/firestore_service.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await PrefsService.init();
-
-  // Seed pre-registered demo user (runs once, idempotent)
-  FirestoreService.seedPreRegisteredUser(
-    phone: '9582733460',
-    name: 'Harmeet',
-    flat: '1323',
-    society: 'Sector 15 Part 2, Gurgaon',
-    communityType: 'sector',
-    isAdmin: false,
-    isGated: false,
-  );
   runApp(
     MultiProvider(
       providers: [
