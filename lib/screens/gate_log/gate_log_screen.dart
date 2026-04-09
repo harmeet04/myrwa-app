@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/models.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
 import '../../utils/app_colors.dart';
+import '../../services/firestore_service.dart';
 
 class GateLogScreen extends StatefulWidget {
   const GateLogScreen({super.key});
@@ -13,26 +15,20 @@ class GateLogScreen extends StatefulWidget {
 }
 
 class _GateLogScreenState extends State<GateLogScreen> {
-  late List<GateEntry> _entries;
   bool _showMyFlat = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _entries = MockData.gateEntries;
-  }
-
-  List<GateEntry> get _filtered {
-    if (!_showMyFlat) return _entries;
+  List<GateEntry> _applyFilter(List<GateEntry> entries) {
+    if (!_showMyFlat) return entries;
     final myFlat = PrefsService.userFlat;
-    return _entries.where((e) => e.flatVisiting == myFlat).toList();
+    return entries.where((e) => e.flatVisiting == myFlat).toList();
   }
 
   @override
   Widget build(BuildContext context) {
+    final society = PrefsService.societyName;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gate Log / गेट लॉग'),
+        title: const Text('Gate Log / \u0917\u0947\u091F \u0932\u0949\u0917'),
         actions: [
           FilterChip(
             label: Text(_showMyFlat ? 'My Flat' : 'All'),
@@ -47,19 +43,35 @@ class _GateLogScreenState extends State<GateLogScreen> {
           const SizedBox(width: 8),
         ],
       ),
-      body: _filtered.isEmpty
-          ? const Center(child: Column(
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirestoreService.gateLogStream(society),
+        builder: (context, snapshot) {
+          List<GateEntry> entries;
+          if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+            entries = snapshot.data!.docs
+                .map((d) => FirestoreService.gateEntryFromDoc(d))
+                .toList();
+          } else {
+            entries = MockData.gateEntries;
+          }
+
+          final filtered = _applyFilter(entries);
+
+          if (filtered.isEmpty) {
+            return const Center(child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [Icon(Icons.door_sliding, size: 64, color: Colors.grey), SizedBox(height: 8), Text('No entries found')],
-            ))
-          : RefreshIndicator(
-              color: AppColors.primaryAmber,
-              onRefresh: () async => setState(() {}),
-              child: ListView.builder(
+            ));
+          }
+
+          return RefreshIndicator(
+            color: AppColors.primaryAmber,
+            onRefresh: () async => setState(() {}),
+            child: ListView.builder(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: _filtered.length,
+              itemCount: filtered.length,
               itemBuilder: (_, i) {
-                final e = _filtered[i];
+                final e = filtered[i];
                 return Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -78,7 +90,7 @@ class _GateLogScreenState extends State<GateLogScreen> {
                                 color: e.exited ? AppColors.textSecondary : AppColors.statusSuccess,
                               ),
                             ),
-                            if (i < _filtered.length - 1) Container(
+                            if (i < filtered.length - 1) Container(
                               width: 2, height: 30,
                               color: AppColors.cardBorder,
                             ),
@@ -125,16 +137,18 @@ class _GateLogScreenState extends State<GateLogScreen> {
                                 Text('Out: ${formatTime(e.timeOut!)}', style: TextStyle(fontSize: 12, color: AppColors.textPrimary)),
                               ],
                             ]),
-                            // Guard mark exit (mock)
+                            // Guard mark exit
                             if (!e.exited && PrefsService.isAdmin) ...[
                               const SizedBox(height: 8),
                               SizedBox(
                                 height: 28,
                                 child: OutlinedButton.icon(
-                                  onPressed: () => setState(() {
-                                    e.exited = true;
-                                    e.timeOut = DateTime.now();
-                                  }),
+                                  onPressed: () {
+                                    FirestoreService.updateGateEntry(e.id, {
+                                      'exited': true,
+                                      'timeOut': Timestamp.fromDate(DateTime.now()),
+                                    });
+                                  },
                                   icon: const Icon(Icons.logout, size: 14),
                                   label: const Text('Mark Exit', style: TextStyle(fontSize: 12)),
                                   style: OutlinedButton.styleFrom(
@@ -151,8 +165,10 @@ class _GateLogScreenState extends State<GateLogScreen> {
                   ),
                 );
               },
-              ),
             ),
+          );
+        },
+      ),
     );
   }
 }

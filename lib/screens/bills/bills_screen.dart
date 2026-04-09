@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/models.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/prefs_service.dart';
+import '../../services/firestore_service.dart';
 import '../../services/analytics_service.dart';
 
 class BillsScreen extends StatefulWidget {
@@ -16,18 +18,18 @@ class BillsScreen extends StatefulWidget {
 class _BillsScreenState extends State<BillsScreen> {
   int _selectedTab = 0; // 0 = Pending, 1 = History
 
-  List<Bill> get _pendingBills {
+  List<Bill> _pendingBills(List<Bill> allBills) {
     final paidIds = PrefsService.paidBillIds;
-    return MockData.bills
+    return allBills
         .where((b) =>
             (b.status == BillStatus.pending || b.status == BillStatus.overdue) &&
             !paidIds.contains(b.id))
         .toList();
   }
 
-  List<Bill> get _historyBills {
+  List<Bill> _historyBills(List<Bill> allBills) {
     final paidIds = PrefsService.paidBillIds;
-    return MockData.bills
+    return allBills
         .where((b) => b.status == BillStatus.paid || paidIds.contains(b.id))
         .toList();
   }
@@ -52,79 +54,97 @@ class _BillsScreenState extends State<BillsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final bills = _selectedTab == 0 ? _pendingBills : _historyBills;
+    final society = PrefsService.societyName;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reminders'),
       ),
-      body: Column(
-        children: [
-          // Tab selector
-          Container(
-            margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
-            decoration: BoxDecoration(
-              color: AppColors.surfaceLight,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: AppColors.cardBorder),
-            ),
-            child: Row(
-              children: [
-                _TabButton(
-                  label: 'Pending',
-                  active: _selectedTab == 0,
-                  onTap: () => setState(() => _selectedTab = 0),
-                ),
-                _TabButton(
-                  label: 'History',
-                  active: _selectedTab == 1,
-                  onTap: () => setState(() => _selectedTab = 1),
-                ),
-              ],
-            ),
-          ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirestoreService.billsStream(society),
+        builder: (context, snapshot) {
+          List<Bill> allBills;
+          if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+            allBills = snapshot.data!.docs
+                .map((d) => FirestoreService.billFromDoc(d))
+                .toList();
+          } else {
+            allBills = MockData.bills;
+          }
 
-          // Bill list
-          Expanded(
-            child: bills.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          _selectedTab == 0
-                              ? Icons.check_circle_outline
-                              : Icons.receipt_long_outlined,
-                          size: 64,
-                          color: AppColors.textTertiary,
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          _selectedTab == 0
-                              ? 'All caught up! No pending bills.'
-                              : 'No payment history yet.',
-                          style: const TextStyle(
-                              color: AppColors.textSecondary, fontSize: 14),
-                        ),
-                      ],
+          final bills = _selectedTab == 0
+              ? _pendingBills(allBills)
+              : _historyBills(allBills);
+
+          return Column(
+            children: [
+              // Tab selector
+              Container(
+                margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceLight,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppColors.cardBorder),
+                ),
+                child: Row(
+                  children: [
+                    _TabButton(
+                      label: 'Pending',
+                      active: _selectedTab == 0,
+                      onTap: () => setState(() => _selectedTab = 0),
                     ),
-                  )
-                : RefreshIndicator(
-                    color: AppColors.primaryAmber,
-                    onRefresh: () async => setState(() {}),
-                    child: ListView.builder(
-                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-                      itemCount: bills.length,
-                      itemBuilder: (_, i) => _BillCard(
-                        bill: bills[i],
-                        isPaid: _selectedTab == 1,
-                        billColor: _billColor(bills[i]),
-                        onMarkPaid: () => _markAsPaid(bills[i]),
+                    _TabButton(
+                      label: 'History',
+                      active: _selectedTab == 1,
+                      onTap: () => setState(() => _selectedTab = 1),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Bill list
+              Expanded(
+                child: bills.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              _selectedTab == 0
+                                  ? Icons.check_circle_outline
+                                  : Icons.receipt_long_outlined,
+                              size: 64,
+                              color: AppColors.textTertiary,
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              _selectedTab == 0
+                                  ? 'All caught up! No pending bills.'
+                                  : 'No payment history yet.',
+                              style: const TextStyle(
+                                  color: AppColors.textSecondary, fontSize: 14),
+                            ),
+                          ],
+                        ),
+                      )
+                    : RefreshIndicator(
+                        color: AppColors.primaryAmber,
+                        onRefresh: () async => setState(() {}),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                          itemCount: bills.length,
+                          itemBuilder: (_, i) => _BillCard(
+                            bill: bills[i],
+                            isPaid: _selectedTab == 1,
+                            billColor: _billColor(bills[i]),
+                            onMarkPaid: () => _markAsPaid(bills[i]),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -255,8 +275,8 @@ class _BillCard extends StatelessWidget {
                 ),
                 child: Text(
                   daysUntilDue == 0
-                      ? '⚠️ Due today!'
-                      : '⚠️ Due in $daysUntilDue day${daysUntilDue == 1 ? '' : 's'}',
+                      ? '\u26A0\uFE0F Due today!'
+                      : '\u26A0\uFE0F Due in $daysUntilDue day${daysUntilDue == 1 ? '' : 's'}',
                   style: const TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,

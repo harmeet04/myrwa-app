@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/models.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_spacing.dart';
+import '../../utils/prefs_service.dart';
+import '../../services/firestore_service.dart';
 import '../../widgets/filter_chip_bar.dart';
 import '../../widgets/warm_card.dart';
 import '../../widgets/status_chip.dart';
@@ -19,33 +22,26 @@ class VisitorsScreen extends StatefulWidget {
 }
 
 class _VisitorsScreenState extends State<VisitorsScreen> {
-  late List<Visitor> _visitors;
   int _filterIndex = 0;
 
-  static const _filterOptions = ['All', '⏳ Pending', '✅ Approved', '✓ Completed'];
+  static const _filterOptions = ['All', '\u23F3 Pending', '\u2705 Approved', '\u2713 Completed'];
 
-  @override
-  void initState() {
-    super.initState();
-    _visitors = MockData.visitors;
-  }
-
-  List<Visitor> get _filtered {
+  List<Visitor> _filterList(List<Visitor> all) {
     switch (_filterIndex) {
       case 1:
-        return _visitors.where((v) => v.status == VisitorStatus.pending).toList();
+        return all.where((v) => v.status == VisitorStatus.pending).toList();
       case 2:
-        return _visitors.where((v) => v.status == VisitorStatus.approved).toList();
+        return all.where((v) => v.status == VisitorStatus.approved).toList();
       case 3:
-        return _visitors.where((v) => v.status == VisitorStatus.completed).toList();
+        return all.where((v) => v.status == VisitorStatus.completed).toList();
       default:
-        return _visitors;
+        return all;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _filtered;
+    final society = PrefsService.societyName;
     return Scaffold(
       backgroundColor: AppColors.scaffoldLight,
       appBar: AppBar(
@@ -55,40 +51,62 @@ class _VisitorsScreenState extends State<VisitorsScreen> {
         surfaceTintColor: Colors.transparent,
       ),
       floatingActionButton: _buildFab(),
-      body: Column(
-        children: [
-          const SizedBox(height: AppSpacing.sm),
-          FilterChipBar(
-            options: _filterOptions,
-            selectedIndex: _filterIndex,
-            onSelected: (i) => setState(() => _filterIndex = i),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Expanded(
-            child: filtered.isEmpty
-                ? const EmptyState(
-                    emoji: '🏠',
-                    title: 'No visitors today',
-                    subtitle: 'Pre-approve a visitor using the button below.',
-                  )
-                : RefreshIndicator(
-                    color: AppColors.primaryAmber,
-                    onRefresh: () async => setState(() {}),
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppSpacing.lg,
-                        vertical: AppSpacing.xs,
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirestoreService.visitorsStream(society),
+        builder: (context, snapshot) {
+          List<Visitor> visitors;
+          if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+            visitors = snapshot.data!.docs
+                .map((d) => FirestoreService.visitorFromDoc(d))
+                .toList();
+          } else {
+            visitors = MockData.visitors;
+          }
+
+          final filtered = _filterList(visitors);
+
+          return Column(
+            children: [
+              const SizedBox(height: AppSpacing.sm),
+              FilterChipBar(
+                options: _filterOptions,
+                selectedIndex: _filterIndex,
+                onSelected: (i) => setState(() => _filterIndex = i),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Expanded(
+                child: filtered.isEmpty
+                    ? const EmptyState(
+                        emoji: '\uD83C\uDFE0',
+                        title: 'No visitors today',
+                        subtitle: 'Pre-approve a visitor using the button below.',
+                      )
+                    : RefreshIndicator(
+                        color: AppColors.primaryAmber,
+                        onRefresh: () async => setState(() {}),
+                        child: ListView.builder(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: AppSpacing.lg,
+                            vertical: AppSpacing.xs,
+                          ),
+                          itemCount: filtered.length,
+                          itemBuilder: (_, i) => _VisitorCard(
+                            visitor: filtered[i],
+                            onApprove: () {
+                              FirestoreService.updateVisitor(filtered[i].id, {'status': 'approved'});
+                              AnalyticsService.logVisitorAction('approved');
+                            },
+                            onReject: () {
+                              FirestoreService.updateVisitor(filtered[i].id, {'status': 'rejected'});
+                              AnalyticsService.logVisitorAction('rejected');
+                            },
+                          ),
+                        ),
                       ),
-                      itemCount: filtered.length,
-                      itemBuilder: (_, i) => _VisitorCard(
-                        visitor: filtered[i],
-                        onApprove: () { setState(() => filtered[i].status = VisitorStatus.approved); AnalyticsService.logVisitorAction('approved'); },
-                        onReject: () { setState(() => filtered[i].status = VisitorStatus.rejected); AnalyticsService.logVisitorAction('rejected'); },
-                      ),
-                    ),
-                  ),
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -110,7 +128,7 @@ class _VisitorsScreenState extends State<VisitorsScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('➕', style: TextStyle(fontSize: 16)),
+                Text('\u2795', style: TextStyle(fontSize: 16)),
                 SizedBox(width: AppSpacing.sm),
                 Text(
                   'Pre-approve Visitor',
@@ -216,20 +234,16 @@ class _VisitorsScreenState extends State<VisitorsScreen> {
               final otp = (1000 + (DateTime.now().millisecondsSinceEpoch % 9000))
                   .toString()
                   .substring(0, 4);
-              setState(() {
-                _visitors.insert(
-                  0,
-                  Visitor(
-                    id: 'v_${DateTime.now().millisecondsSinceEpoch}',
-                    name: nameCtrl.text,
-                    purpose: purposeCtrl.text.isEmpty ? 'Guest Visit' : purposeCtrl.text,
-                    flat: 'A-101',
-                    date: DateTime.now(),
-                    otp: otp,
-                    status: VisitorStatus.approved,
-                  ),
-                );
-              });
+              final visitor = Visitor(
+                id: 'v_${DateTime.now().millisecondsSinceEpoch}',
+                name: nameCtrl.text,
+                purpose: purposeCtrl.text.isEmpty ? 'Guest Visit' : purposeCtrl.text,
+                flat: PrefsService.userFlat.isEmpty ? 'A-101' : PrefsService.userFlat,
+                date: DateTime.now(),
+                otp: otp,
+                status: VisitorStatus.approved,
+              );
+              FirestoreService.addVisitor(visitor);
               Navigator.pop(ctx);
               showSnack(context, 'Visitor pre-approved! OTP: $otp');
             }
@@ -268,10 +282,10 @@ class _VisitorCard extends StatelessWidget {
 
   static Map<String, dynamic> _purposeStyle(String purpose) {
     final p = purpose.toLowerCase();
-    if (p.contains('delivery')) return {'emoji': '📦', 'bg': AppColors.greenBg};
-    if (p.contains('guest'))    return {'emoji': '👤', 'bg': AppColors.blueBg};
-    if (p.contains('cab'))      return {'emoji': '🚕', 'bg': AppColors.amberBg};
-    return {'emoji': '🚶', 'bg': AppColors.purpleBg};
+    if (p.contains('delivery')) return {'emoji': '\uD83D\uDCE6', 'bg': AppColors.greenBg};
+    if (p.contains('guest'))    return {'emoji': '\uD83D\uDC64', 'bg': AppColors.blueBg};
+    if (p.contains('cab'))      return {'emoji': '\uD83D\uDE95', 'bg': AppColors.amberBg};
+    return {'emoji': '\uD83D\uDEB6', 'bg': AppColors.purpleBg};
   }
 
   Color _statusChipColor(VisitorStatus s) {
@@ -325,7 +339,7 @@ class _VisitorCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 2),
                     Text(
-                      '${visitor.purpose} • ${timeAgo(visitor.date)}',
+                      '${visitor.purpose} \u2022 ${timeAgo(visitor.date)}',
                       style: const TextStyle(
                         fontSize: 11,
                         color: AppColors.textSecondary,
@@ -388,7 +402,7 @@ class _VisitorCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: _ActionButton(
-                    label: '✓ Approve',
+                    label: '\u2713 Approve',
                     color: AppColors.statusSuccess,
                     onTap: onApprove,
                   ),
@@ -396,7 +410,7 @@ class _VisitorCard extends StatelessWidget {
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: _ActionButton(
-                    label: '✗ Reject',
+                    label: '\u2717 Reject',
                     color: AppColors.statusError,
                     onTap: onReject,
                   ),

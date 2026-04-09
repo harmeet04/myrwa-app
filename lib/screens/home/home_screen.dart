@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/models.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/app_spacing.dart';
@@ -7,6 +8,7 @@ import '../../utils/prefs_service.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
 import '../../services/notification_provider.dart';
+import '../../services/firestore_service.dart';
 import '../../widgets/action_tile.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/warm_card.dart';
@@ -68,6 +70,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showNotifications(BuildContext context) {
+    final society = PrefsService.societyName;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -90,30 +93,57 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             const Divider(height: 1),
             Expanded(
-              child: ListView(
-                controller: scrollCtrl,
-                padding: const EdgeInsets.all(16),
-                children: [
-                  ...MockData.notices.take(3).map((n) => _NotificationItem(
-                    icon: Icons.campaign,
-                    color: AppColors.primaryAmber,
-                    title: n.title,
-                    subtitle: timeAgo(n.date),
-                  )),
-                  ...MockData.complaints.where((c) => c.status == ComplaintStatus.open).take(2).map((c) => _NotificationItem(
-                    icon: Icons.warning_amber,
-                    color: AppColors.statusWarning,
-                    title: 'Complaint: ${c.title}',
-                    subtitle: timeAgo(c.date),
-                  )),
-                  if (MockData.bills.where((b) => b.status == BillStatus.pending).isNotEmpty)
-                    _NotificationItem(
-                      icon: Icons.receipt_long,
-                      color: AppColors.statusError,
-                      title: 'Pending bills reminder',
-                      subtitle: 'You have unpaid bills',
-                    ),
-                ],
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirestoreService.noticesStream(society),
+                builder: (context, noticesSnap) {
+                  final notices = (noticesSnap.hasData && noticesSnap.data!.docs.isNotEmpty)
+                      ? noticesSnap.data!.docs.map((d) => FirestoreService.noticeFromDoc(d)).toList()
+                      : MockData.notices;
+
+                  return StreamBuilder<QuerySnapshot>(
+                    stream: FirestoreService.complaintsStream(society),
+                    builder: (context, complaintsSnap) {
+                      final complaints = (complaintsSnap.hasData && complaintsSnap.data!.docs.isNotEmpty)
+                          ? complaintsSnap.data!.docs.map((d) => FirestoreService.complaintFromDoc(d)).toList()
+                          : MockData.complaints;
+
+                      return StreamBuilder<QuerySnapshot>(
+                        stream: FirestoreService.billsStream(society),
+                        builder: (context, billsSnap) {
+                          final bills = (billsSnap.hasData && billsSnap.data!.docs.isNotEmpty)
+                              ? billsSnap.data!.docs.map((d) => FirestoreService.billFromDoc(d)).toList()
+                              : MockData.bills;
+
+                          return ListView(
+                            controller: scrollCtrl,
+                            padding: const EdgeInsets.all(16),
+                            children: [
+                              ...notices.take(3).map((n) => _NotificationItem(
+                                icon: Icons.campaign,
+                                color: AppColors.primaryAmber,
+                                title: n.title,
+                                subtitle: timeAgo(n.date),
+                              )),
+                              ...complaints.where((c) => c.status == ComplaintStatus.open).take(2).map((c) => _NotificationItem(
+                                icon: Icons.warning_amber,
+                                color: AppColors.statusWarning,
+                                title: 'Complaint: ${c.title}',
+                                subtitle: timeAgo(c.date),
+                              )),
+                              if (bills.where((b) => b.status == BillStatus.pending).isNotEmpty)
+                                _NotificationItem(
+                                  icon: Icons.receipt_long,
+                                  color: AppColors.statusError,
+                                  title: 'Pending bills reminder',
+                                  subtitle: 'You have unpaid bills',
+                                ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  );
+                },
               ),
             ),
           ],
@@ -560,82 +590,121 @@ class _NeedsAttentionSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isGated = PrefsService.isGatedCommunity;
-    final pendingVisitors = isGated
-        ? MockData.visitors
-            .where((v) => v.status == VisitorStatus.pending)
-            .toList()
-        : <Visitor>[];
-    final paidIds = PrefsService.paidBillIds;
-    final pendingBills = MockData.bills
-        .where((b) =>
-            (b.status == BillStatus.pending || b.status == BillStatus.overdue) &&
-            !paidIds.contains(b.id))
-        .toList();
-
-    final hasPending = pendingVisitors.isNotEmpty || pendingBills.isNotEmpty;
+    final society = PrefsService.societyName;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SectionHeader(emoji: '\u26A1', title: 'Needs Your Attention'),
-        if (!hasPending)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-            child: WarmCard(
-              child: Center(
-                child: Text(
-                  'All caught up! \u{1F389}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.textSecondary,
+        StreamBuilder<QuerySnapshot>(
+          stream: isGated ? FirestoreService.visitorsStream(society) : null,
+          builder: (context, visitorsSnap) {
+            final pendingVisitors = isGated
+                ? (() {
+                    List<Visitor> visitors;
+                    if (visitorsSnap.hasData && visitorsSnap.data!.docs.isNotEmpty) {
+                      visitors = visitorsSnap.data!.docs
+                          .map((d) => FirestoreService.visitorFromDoc(d))
+                          .toList();
+                    } else {
+                      visitors = MockData.visitors;
+                    }
+                    return visitors
+                        .where((v) => v.status == VisitorStatus.pending)
+                        .toList();
+                  })()
+                : <Visitor>[];
+
+            return StreamBuilder<QuerySnapshot>(
+              stream: FirestoreService.billsStream(society),
+              builder: (context, billsSnap) {
+                List<Bill> allBills;
+                if (billsSnap.hasData && billsSnap.data!.docs.isNotEmpty) {
+                  allBills = billsSnap.data!.docs
+                      .map((d) => FirestoreService.billFromDoc(d))
+                      .toList();
+                } else {
+                  allBills = MockData.bills;
+                }
+
+                final paidIds = PrefsService.paidBillIds;
+                final pendingBills = allBills
+                    .where((b) =>
+                        (b.status == BillStatus.pending || b.status == BillStatus.overdue) &&
+                        !paidIds.contains(b.id))
+                    .toList();
+
+                final hasPending = pendingVisitors.isNotEmpty || pendingBills.isNotEmpty;
+
+                if (!hasPending) {
+                  return Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                    child: WarmCard(
+                      child: Center(
+                        child: Text(
+                          'All caught up! \u{1F389}',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
+                  child: Column(
+                    children: [
+                      ...pendingVisitors.map((v) => ActionTile(
+                            emoji: '\u{1F6B6}',
+                            bgColor: AppColors.amberBg,
+                            borderColor: AppColors.amberBorder,
+                            title: v.name,
+                            subtitle: '${v.purpose} \u2022 ${timeAgo(v.date)}',
+                            actions: [
+                              ActionTileButton(
+                                label: '\u2713',
+                                color: AppColors.statusSuccess,
+                                onTap: () {
+                                  FirestoreService.updateVisitor(v.id, {'status': 'approved'});
+                                  showSnack(context, '${v.name} approved');
+                                },
+                              ),
+                              ActionTileButton(
+                                label: '\u2717',
+                                color: AppColors.statusError,
+                                onTap: () {
+                                  FirestoreService.updateVisitor(v.id, {'status': 'rejected'});
+                                  showSnack(context, '${v.name} rejected');
+                                },
+                              ),
+                            ],
+                          )),
+                      ...pendingBills.map((b) => ActionTile(
+                            emoji: '\u{1F9FE}',
+                            bgColor: AppColors.blueBg,
+                            borderColor: AppColors.blueBorder,
+                            title: '${b.category} bill',
+                            subtitle:
+                                '\u20B9${b.amount.toInt()} \u2022 Due ${formatDate(b.dueDate)}',
+                            actions: [
+                              ActionTileButton(
+                                label: 'Mark Paid',
+                                color: AppColors.primaryAmber,
+                                onTap: () => onPush(const BillsScreen()),
+                              ),
+                            ],
+                          )),
+                    ],
                   ),
-                ),
-              ),
-            ),
-          ),
-        if (hasPending)
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-            child: Column(
-              children: [
-                ...pendingVisitors.map((v) => ActionTile(
-                      emoji: '\u{1F6B6}',
-                      bgColor: AppColors.amberBg,
-                      borderColor: AppColors.amberBorder,
-                      title: v.name,
-                      subtitle: '${v.purpose} \u2022 ${timeAgo(v.date)}',
-                      actions: [
-                        ActionTileButton(
-                          label: '\u2713',
-                          color: AppColors.statusSuccess,
-                          onTap: () => showSnack(context, '${v.name} approved'),
-                        ),
-                        ActionTileButton(
-                          label: '\u2717',
-                          color: AppColors.statusError,
-                          onTap: () => showSnack(context, '${v.name} rejected'),
-                        ),
-                      ],
-                    )),
-                ...pendingBills.map((b) => ActionTile(
-                      emoji: '\u{1F9FE}',
-                      bgColor: AppColors.blueBg,
-                      borderColor: AppColors.blueBorder,
-                      title: '${b.category} bill',
-                      subtitle:
-                          '\u20B9${b.amount.toInt()} \u2022 Due ${formatDate(b.dueDate)}',
-                      actions: [
-                        ActionTileButton(
-                          label: 'Mark Paid',
-                          color: AppColors.primaryAmber,
-                          onTap: () => onPush(const BillsScreen()),
-                        ),
-                      ],
-                    )),
-              ],
-            ),
-          ),
+                );
+              },
+            );
+          },
+        ),
       ],
     );
   }
@@ -675,7 +744,7 @@ class _QuickAccessSection extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
             itemCount: tiles.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 10),
+            separatorBuilder: (_, __) => const SizedBox(width: 10),
             itemBuilder: (_, i) {
               final t = tiles[i];
               return GestureDetector(
@@ -768,7 +837,7 @@ class _CommunityFeedSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final notices = MockData.notices.take(3).toList();
+    final society = PrefsService.societyName;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -780,69 +849,84 @@ class _CommunityFeedSection extends StatelessWidget {
             MaterialPageRoute(builder: (_) => const CommunityScreen()),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-          child: Column(
-            children: notices.map((n) => WarmCard(
-              onTap: () => onPush(const NoticesScreen()),
+        StreamBuilder<QuerySnapshot>(
+          stream: FirestoreService.noticesStream(society),
+          builder: (context, snapshot) {
+            List<Notice> notices;
+            if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+              notices = snapshot.data!.docs
+                  .map((d) => FirestoreService.noticeFromDoc(d))
+                  .take(3)
+                  .toList();
+            } else {
+              notices = MockData.notices.take(3).toList();
+            }
+
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
+                children: notices.map((n) => WarmCard(
+                  onTap: () => onPush(const NoticesScreen()),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.amberBg,
-                          borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
-                        ),
-                        child: Text(
-                          n.category,
-                          style: const TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.textSecondary,
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.amberBg,
+                              borderRadius: BorderRadius.circular(AppSpacing.radiusChip),
+                            ),
+                            child: Text(
+                              n.category,
+                              style: const TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
                           ),
-                        ),
+                          const Spacer(),
+                          Text(
+                            timeAgo(n.date),
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: AppColors.textTertiary,
+                            ),
+                          ),
+                        ],
                       ),
-                      const Spacer(),
+                      const SizedBox(height: AppSpacing.sm),
                       Text(
-                        timeAgo(n.date),
+                        n.title,
                         style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.textTertiary,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        n.body,
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    n.title,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    n.body,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
+                )).toList(),
               ),
-            )).toList(),
-          ),
+            );
+          },
         ),
       ],
     );

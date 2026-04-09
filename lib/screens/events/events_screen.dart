@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
 import '../../models/models.dart';
@@ -14,123 +15,120 @@ class EventsScreen extends StatefulWidget {
 }
 
 class _EventsScreenState extends State<EventsScreen> {
-  late List<Event> _events;
-
-  @override
-  void initState() {
-    super.initState();
-    _events = MockData.events;
-    // Restore RSVP from prefs
-    final rsvps = PrefsService.rsvpStatus;
-    for (final e in _events) {
-      final data = rsvps[e.id];
-      if (data != null) {
-        e.hasRsvpd = data['rsvpd'] == true;
-        e.plusOnes = data['plusOnes'] ?? 0;
-      }
-    }
-    _loadFromFirestore();
-  }
-
-  void _loadFromFirestore() {
-    FirestoreService.eventsStream(PrefsService.societyName).listen((snap) {
-      if (snap.docs.isNotEmpty && mounted) {
-        setState(() {
-          _events = snap.docs.map((d) => FirestoreService.eventFromDoc(d)).toList();
-        });
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
+    final society = PrefsService.societyName;
     return Scaffold(
-      appBar: AppBar(title: const Text('Events / कार्यक्रम')),
-      body: RefreshIndicator(
-        color: AppColors.primaryAmber,
-        onRefresh: () async => setState(() {}),
-        child: ListView.builder(
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          itemCount: _events.length,
-          itemBuilder: (_, i) {
-          final e = _events[i];
-          final spotsLeft = e.maxCapacity - e.rsvpCount;
-          return Card(
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => _showDetail(context, e),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    height: 100,
-                    width: double.infinity,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(colors: [cs.primary, cs.primary.withValues(alpha: 0.7)]),
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                    ),
-                    padding: const EdgeInsets.all(16),
+      appBar: AppBar(title: const Text('Events / \u0915\u093E\u0930\u094D\u092F\u0915\u094D\u0930\u092E')),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirestoreService.eventsStream(society),
+        builder: (context, snapshot) {
+          List<Event> events;
+          if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+            events = snapshot.data!.docs
+                .map((d) => FirestoreService.eventFromDoc(d))
+                .toList();
+          } else {
+            events = MockData.events;
+          }
+
+          // Restore RSVP from prefs
+          final rsvps = PrefsService.rsvpStatus;
+          for (final e in events) {
+            final data = rsvps[e.id];
+            if (data != null) {
+              e.hasRsvpd = data['rsvpd'] == true;
+              e.plusOnes = data['plusOnes'] ?? 0;
+            }
+          }
+
+          return RefreshIndicator(
+            color: AppColors.primaryAmber,
+            onRefresh: () async => setState(() {}),
+            child: ListView.builder(
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              itemCount: events.length,
+              itemBuilder: (_, i) {
+                final e = events[i];
+                final spotsLeft = e.maxCapacity - e.rsvpCount;
+                return Card(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: () => _showDetail(context, e),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.end,
                       children: [
-                        Text(e.title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                        const SizedBox(height: 4),
-                        Text(e.organizer, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13)),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Icon(Icons.calendar_today, size: 16, color: AppColors.textSecondary),
-                        const SizedBox(width: 6),
-                        Text(formatDateTime(e.date), style: TextStyle(color: AppColors.textPrimary)),
-                        const SizedBox(width: 16),
-                        Icon(Icons.location_on, size: 16, color: AppColors.textSecondary),
-                        const SizedBox(width: 4),
-                        Text(e.location, style: TextStyle(color: AppColors.textPrimary)),
-                        const Spacer(),
-                        Text('$spotsLeft spots left', style: TextStyle(color: spotsLeft < 10 ? AppColors.statusError : AppColors.statusSuccess, fontWeight: FontWeight.w500, fontSize: 12)),
-                      ],
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: Row(
-                      children: [
-                        Text('${e.rsvpCount} going', style: TextStyle(color: cs.primary, fontWeight: FontWeight.w500)),
-                        if (e.maybeCount > 0) Text(', ${e.maybeCount} maybe', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                        const Spacer(),
-                        if (!e.hasRsvpd) FilledButton.tonal(
-                          onPressed: () {
-                            setState(() { e.hasRsvpd = true; e.rsvpCount++; });
-                            PrefsService.saveRsvp(e.id, true, e.plusOnes);
-                          },
-                          child: const Text('RSVP'),
-                        )
-                        else OutlinedButton(
-                          onPressed: () {
-                            setState(() {
-                              e.hasRsvpd = false;
-                              e.rsvpCount = (e.rsvpCount - 1 - e.plusOnes).clamp(0, e.maxCapacity);
-                              e.plusOnes = 0;
-                            });
-                            PrefsService.saveRsvp(e.id, false, 0);
-                          },
-                          child: const Text('Cancel RSVP'),
+                        Container(
+                          height: 100,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(colors: [cs.primary, cs.primary.withValues(alpha: 0.7)]),
+                            borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
+                          ),
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              Text(e.title, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                              const SizedBox(height: 4),
+                              Text(e.organizer, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Icon(Icons.calendar_today, size: 16, color: AppColors.textSecondary),
+                              const SizedBox(width: 6),
+                              Text(formatDateTime(e.date), style: TextStyle(color: AppColors.textPrimary)),
+                              const SizedBox(width: 16),
+                              Icon(Icons.location_on, size: 16, color: AppColors.textSecondary),
+                              const SizedBox(width: 4),
+                              Text(e.location, style: TextStyle(color: AppColors.textPrimary)),
+                              const Spacer(),
+                              Text('$spotsLeft spots left', style: TextStyle(color: spotsLeft < 10 ? AppColors.statusError : AppColors.statusSuccess, fontWeight: FontWeight.w500, fontSize: 12)),
+                            ],
+                          ),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                          child: Row(
+                            children: [
+                              Text('${e.rsvpCount} going', style: TextStyle(color: cs.primary, fontWeight: FontWeight.w500)),
+                              if (e.maybeCount > 0) Text(', ${e.maybeCount} maybe', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                              const Spacer(),
+                              if (!e.hasRsvpd) FilledButton.tonal(
+                                onPressed: () {
+                                  setState(() { e.hasRsvpd = true; e.rsvpCount++; });
+                                  PrefsService.saveRsvp(e.id, true, e.plusOnes);
+                                },
+                                child: const Text('RSVP'),
+                              )
+                              else OutlinedButton(
+                                onPressed: () {
+                                  setState(() {
+                                    e.hasRsvpd = false;
+                                    e.rsvpCount = (e.rsvpCount - 1 - e.plusOnes).clamp(0, e.maxCapacity);
+                                    e.plusOnes = 0;
+                                  });
+                                  PrefsService.saveRsvp(e.id, false, 0);
+                                },
+                                child: const Text('Cancel RSVP'),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
                   ),
-                ],
-              ),
+                );
+              },
             ),
           );
         },
-        ),
       ),
     );
   }

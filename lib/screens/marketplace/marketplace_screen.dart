@@ -1,10 +1,12 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
 import '../../models/models.dart';
 import '../../utils/app_colors.dart';
+import '../../services/firestore_service.dart';
 import '../../services/storage_service.dart';
 import '../chat/chat_screen.dart';
 
@@ -17,8 +19,6 @@ class MarketplaceScreen extends StatefulWidget {
 
 class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTickerProviderStateMixin {
   late TabController _tabCtrl;
-  late List<MarketItem> _items;
-  late List<ServiceItem> _services;
   String _filter = 'All';
   String _serviceFilter = 'All';
   String _sortBy = 'Date';
@@ -27,24 +27,23 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 2, vsync: this);
-    _items = MockData.marketItems;
-    _services = MockData.services;
   }
 
   @override
   void dispose() { _tabCtrl.dispose(); super.dispose(); }
 
-  List<MarketItem> get _filtered {
-    var list = _filter == 'All' ? _items : _items.where((i) => i.category == _filter).toList();
+  List<MarketItem> _applyFilter(List<MarketItem> items) {
+    var list = _filter == 'All' ? items : items.where((i) => i.category == _filter).toList();
     switch (_sortBy) {
-      case 'Price ↑': list.sort((a, b) => a.price.compareTo(b.price));
-      case 'Price ↓': list.sort((a, b) => b.price.compareTo(a.price));
+      case 'Price \u2191': list.sort((a, b) => a.price.compareTo(b.price));
+      case 'Price \u2193': list.sort((a, b) => b.price.compareTo(a.price));
       default: list.sort((a, b) => b.date.compareTo(a.date));
     }
     return list;
   }
 
-  List<ServiceItem> get _filteredServices => _serviceFilter == 'All' ? _services : _services.where((s) => s.category == _serviceFilter).toList();
+  List<ServiceItem> _applyServiceFilter(List<ServiceItem> services) =>
+      _serviceFilter == 'All' ? services : services.where((s) => s.category == _serviceFilter).toList();
 
   static const _conditions = ['Like New', 'Used', 'Good', 'Fair'];
   String _conditionFor(MarketItem item) => _conditions[item.id.hashCode % _conditions.length];
@@ -82,8 +81,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
 
   @override
   Widget build(BuildContext context) {
-    final cats = ['All', ...{..._items.map((i) => i.category)}];
+    final society = PrefsService.societyName;
     final serviceCats = ['All', 'General Store', 'Salon', 'Tuition', 'Gym', 'Laundry', 'Pharmacy'];
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Marketplace'),
@@ -103,139 +103,172 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
       body: TabBarView(
         controller: _tabCtrl,
         children: [
-          // Items tab
-          Column(
-            children: [
-              // Filters row
-              Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: SizedBox(
-                        height: 36,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: cats.length,
-                          itemBuilder: (_, i) => Padding(
-                            padding: const EdgeInsets.only(right: 6),
-                            child: FilterChip(label: Text(cats[i], style: const TextStyle(fontSize: 12)), selected: _filter == cats[i],
-                              onSelected: (_) => setState(() => _filter = cats[i]),
-                              visualDensity: VisualDensity.compact,
+          // Items tab - Firestore StreamBuilder
+          StreamBuilder<QuerySnapshot>(
+            stream: FirestoreService.marketplaceStream(society),
+            builder: (context, snapshot) {
+              List<MarketItem> items;
+              if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+                items = snapshot.data!.docs
+                    .map((d) => FirestoreService.marketItemFromDoc(d))
+                    .toList();
+              } else {
+                items = MockData.marketItems;
+              }
+
+              final cats = ['All', ...{...items.map((i) => i.category)}];
+              final filtered = _applyFilter(items);
+
+              return Column(
+                children: [
+                  // Filters row
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: SizedBox(
+                            height: 36,
+                            child: ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: cats.length,
+                              itemBuilder: (_, i) => Padding(
+                                padding: const EdgeInsets.only(right: 6),
+                                child: FilterChip(label: Text(cats[i], style: const TextStyle(fontSize: 12)), selected: _filter == cats[i],
+                                  onSelected: (_) => setState(() => _filter = cats[i]),
+                                  visualDensity: VisualDensity.compact,
+                                ),
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ),
-                    PopupMenuButton<String>(
-                      icon: const Icon(Icons.sort, size: 20),
-                      onSelected: (v) => setState(() => _sortBy = v),
-                      itemBuilder: (_) => ['Date', 'Price ↑', 'Price ↓'].map((s) => PopupMenuItem(value: s, child: Text(s))).toList(),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: _filtered.isEmpty
-                    ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
-                        Icon(Icons.shopping_bag_outlined, size: 72, color: AppColors.cardBorder),
-                        const SizedBox(height: 12),
-                        Text('No items found', style: TextStyle(fontSize: 16, color: AppColors.textTertiary)),
-                      ]))
-                    : RefreshIndicator(
-                        onRefresh: () async => await Future.delayed(const Duration(seconds: 1)),
-                        child: GridView.builder(
-                          padding: const EdgeInsets.all(12),
-                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 2, childAspectRatio: 0.62, crossAxisSpacing: 10, mainAxisSpacing: 10,
-                          ),
-                          itemCount: _filtered.length,
-                          itemBuilder: (_, i) => _ItemCard(
-                            item: _filtered[i],
-                            condition: _conditionFor(_filtered[i]),
-                            conditionColor: _conditionColor(_conditionFor(_filtered[i])),
-                            categoryIcon: _itemCategoryIcon(_filtered[i].category),
-                            categoryColor: _itemCategoryColor(_filtered[i].category),
-                            onTap: () => _showItemDetail(context, _filtered[i]),
-                          ),
+                        PopupMenuButton<String>(
+                          icon: const Icon(Icons.sort, size: 20),
+                          onSelected: (v) => setState(() => _sortBy = v),
+                          itemBuilder: (_) => ['Date', 'Price \u2191', 'Price \u2193'].map((s) => PopupMenuItem(value: s, child: Text(s))).toList(),
                         ),
-                      ),
-              ),
-            ],
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: filtered.isEmpty
+                        ? Center(child: Column(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.shopping_bag_outlined, size: 72, color: AppColors.cardBorder),
+                            const SizedBox(height: 12),
+                            Text('No items found', style: TextStyle(fontSize: 16, color: AppColors.textTertiary)),
+                          ]))
+                        : RefreshIndicator(
+                            onRefresh: () async => setState(() {}),
+                            child: GridView.builder(
+                              padding: const EdgeInsets.all(12),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2, childAspectRatio: 0.62, crossAxisSpacing: 10, mainAxisSpacing: 10,
+                              ),
+                              itemCount: filtered.length,
+                              itemBuilder: (_, i) => _ItemCard(
+                                item: filtered[i],
+                                condition: _conditionFor(filtered[i]),
+                                conditionColor: _conditionColor(_conditionFor(filtered[i])),
+                                categoryIcon: _itemCategoryIcon(filtered[i].category),
+                                categoryColor: _itemCategoryColor(filtered[i].category),
+                                onTap: () => _showItemDetail(context, filtered[i]),
+                              ),
+                            ),
+                          ),
+                  ),
+                ],
+              );
+            },
           ),
-          // Services tab
-          Column(
-            children: [
-              SizedBox(
-                height: 48,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  itemCount: serviceCats.length,
-                  itemBuilder: (_, i) => Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: FilterChip(label: Text(serviceCats[i]), selected: _serviceFilter == serviceCats[i],
-                      onSelected: (_) => setState(() => _serviceFilter = serviceCats[i])),
+          // Services tab - Firestore StreamBuilder
+          StreamBuilder<QuerySnapshot>(
+            stream: FirestoreService.servicesStream(society),
+            builder: (context, snapshot) {
+              List<ServiceItem> services;
+              if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+                services = snapshot.data!.docs
+                    .map((d) => FirestoreService.serviceItemFromDoc(d))
+                    .toList();
+              } else {
+                services = MockData.services;
+              }
+
+              final filteredServices = _applyServiceFilter(services);
+
+              return Column(
+                children: [
+                  SizedBox(
+                    height: 48,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      itemCount: serviceCats.length,
+                      itemBuilder: (_, i) => Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: FilterChip(label: Text(serviceCats[i]), selected: _serviceFilter == serviceCats[i],
+                          onSelected: (_) => setState(() => _serviceFilter = serviceCats[i])),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-              Expanded(
-                child: RefreshIndicator(
-                  onRefresh: () async => await Future.delayed(const Duration(seconds: 1)),
-                  child: ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 80),
-                    itemCount: _filteredServices.length,
-                    itemBuilder: (_, i) {
-                      final s = _filteredServices[i];
-                      return Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(children: [
-                                CircleAvatar(
-                                  backgroundColor: _serviceCatColor(s.category).withValues(alpha: 0.15),
-                                  child: Icon(_serviceCatIcon(s.category), color: _serviceCatColor(s.category)),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(s.shopName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                    Text(s.category, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                                  ],
-                                )),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                  decoration: BoxDecoration(color: AppColors.greenBg, borderRadius: BorderRadius.circular(8)),
-                                  child: Text(s.timings, style: TextStyle(fontSize: 11, color: AppColors.statusSuccess, fontWeight: FontWeight.w500)),
-                                ),
-                              ]),
-                              const SizedBox(height: 8),
-                              Text(s.description, style: TextStyle(color: AppColors.textPrimary)),
-                              const SizedBox(height: 8),
-                              Row(children: [
-                                Icon(Icons.location_on, size: 14, color: AppColors.textSecondary),
-                                const SizedBox(width: 4),
-                                Text(s.flat, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                                const Spacer(),
-                                OutlinedButton.icon(
-                                  onPressed: () => showSnack(context, 'Calling ${s.contact}...'),
-                                  icon: const Icon(Icons.phone, size: 16),
-                                  label: Text(s.contact),
-                                  style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
-                                ),
-                              ]),
-                            ],
-                          ),
-                        ),
-                      );
-                    },
+                  Expanded(
+                    child: RefreshIndicator(
+                      onRefresh: () async => setState(() {}),
+                      child: ListView.builder(
+                        padding: const EdgeInsets.only(bottom: 80),
+                        itemCount: filteredServices.length,
+                        itemBuilder: (_, i) {
+                          final s = filteredServices[i];
+                          return Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(children: [
+                                    CircleAvatar(
+                                      backgroundColor: _serviceCatColor(s.category).withValues(alpha: 0.15),
+                                      child: Icon(_serviceCatIcon(s.category), color: _serviceCatColor(s.category)),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(s.shopName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                        Text(s.category, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                      ],
+                                    )),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(color: AppColors.greenBg, borderRadius: BorderRadius.circular(8)),
+                                      child: Text(s.timings, style: TextStyle(fontSize: 11, color: AppColors.statusSuccess, fontWeight: FontWeight.w500)),
+                                    ),
+                                  ]),
+                                  const SizedBox(height: 8),
+                                  Text(s.description, style: TextStyle(color: AppColors.textPrimary)),
+                                  const SizedBox(height: 8),
+                                  Row(children: [
+                                    Icon(Icons.location_on, size: 14, color: AppColors.textSecondary),
+                                    const SizedBox(width: 4),
+                                    Text(s.flat, style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                    const Spacer(),
+                                    OutlinedButton.icon(
+                                      onPressed: () => showSnack(context, 'Calling ${s.contact}...'),
+                                      icon: const Icon(Icons.phone, size: 16),
+                                      label: Text(s.contact),
+                                      style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact),
+                                    ),
+                                  ]),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ],
+                ],
+              );
+            },
           ),
         ],
       ),
@@ -316,7 +349,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
               const SizedBox(width: 8),
               Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
                 Text(item.seller, style: const TextStyle(fontWeight: FontWeight.w600)),
-                Text('Flat ${item.sellerFlat} • ${timeAgo(item.date)}', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                Text('Flat ${item.sellerFlat} \u2022 ${timeAgo(item.date)}', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
               ]),
             ]),
             const SizedBox(height: 20),
@@ -380,7 +413,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                 const SizedBox(height: 12),
                 TextField(controller: descCtrl, maxLines: 3, decoration: const InputDecoration(labelText: 'Description')),
                 const SizedBox(height: 12),
-                TextField(controller: priceCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Price (₹)', prefixText: '₹ ')),
+                TextField(controller: priceCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Price (\u20B9)', prefixText: '\u20B9 ')),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
                   onPressed: () async {
@@ -417,20 +450,19 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                           'marketplace/${DateTime.now().millisecondsSinceEpoch}.jpg',
                         );
                       }
-                      setState(() {
-                        _items.insert(0, MarketItem(
-                          id: 'm_${DateTime.now().millisecondsSinceEpoch}',
-                          title: titleCtrl.text, description: descCtrl.text,
-                          price: double.tryParse(priceCtrl.text) ?? 0, category: 'Other',
-                          seller: PrefsService.userName.isEmpty ? 'You' : PrefsService.userName,
-                          sellerFlat: PrefsService.userFlat.isEmpty ? 'A-101' : PrefsService.userFlat,
-                          date: DateTime.now(), hasPhoto: pickedImage != null,
-                          photoUrl: photoUrl,
-                        ));
-                      });
+                      final item = MarketItem(
+                        id: 'm_${DateTime.now().millisecondsSinceEpoch}',
+                        title: titleCtrl.text, description: descCtrl.text,
+                        price: double.tryParse(priceCtrl.text) ?? 0, category: 'Other',
+                        seller: PrefsService.userName.isEmpty ? 'You' : PrefsService.userName,
+                        sellerFlat: PrefsService.userFlat.isEmpty ? 'A-101' : PrefsService.userFlat,
+                        date: DateTime.now(), hasPhoto: pickedImage != null,
+                        photoUrl: photoUrl,
+                      );
+                      FirestoreService.addMarketItem(item);
                       if (!context.mounted) return;
                       Navigator.pop(ctx);
-                      showSnack(context, '✅ Item listed!');
+                      showSnack(context, '\u2705 Item listed!');
                     }
                   },
                   child: const Text('List Item'),
@@ -509,7 +541,7 @@ class _ItemCard extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(formatCurrency(item.price), style: const TextStyle(color: AppColors.statusSuccess, fontWeight: FontWeight.bold, fontSize: 17)),
                   const SizedBox(height: 4),
-                  Text('${item.seller} • ${item.sellerFlat}', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                  Text('${item.seller} \u2022 ${item.sellerFlat}', style: TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                 ],
               ),
             ),
