@@ -117,6 +117,8 @@ class AuthService {
     PrefsService.isGatedCommunity = d['isGated'] ?? true;
     PrefsService.isLoggedIn = true;
     PrefsService.userId = user.uid;
+    final blockedIds = List<String>.from(d['blockedUserIds'] ?? []);
+    await PrefsService.setBlockedUserIds(blockedIds);
     return true;
   }
 

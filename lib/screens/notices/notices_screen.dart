@@ -294,16 +294,27 @@ class _NoticesScreenState extends State<NoticesScreen> {
                   IconButton(
                     onPressed: () {
                       if (commentCtrl.text.trim().isEmpty) return;
+                      final comment = Comment(
+                        id: DateTime.now().millisecondsSinceEpoch.toString(),
+                        author: PrefsService.userName.isEmpty
+                            ? 'You'
+                            : PrefsService.userName,
+                        text: commentCtrl.text.trim(),
+                        date: DateTime.now(),
+                      );
                       setBS(() {
-                        n.comments.add(Comment(
-                          id: DateTime.now().millisecondsSinceEpoch.toString(),
-                          author: PrefsService.userName.isEmpty
-                              ? 'You'
-                              : PrefsService.userName,
-                          text: commentCtrl.text.trim(),
-                          date: DateTime.now(),
-                        ));
+                        n.comments.add(comment);
                       });
+                      if (n.id.isNotEmpty) {
+                        FirestoreService.updateDoc('notices', n.id, {
+                          'comments': FieldValue.arrayUnion([{
+                            'id': comment.id,
+                            'author': comment.author,
+                            'text': comment.text,
+                            'date': Timestamp.fromDate(comment.date),
+                          }]),
+                        });
+                      }
                       commentCtrl.clear();
                     },
                     icon: const Icon(Icons.send, color: AppColors.primaryAmber),

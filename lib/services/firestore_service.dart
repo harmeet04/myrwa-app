@@ -77,6 +77,7 @@ class FirestoreService {
     return _notices
         .where('society', isEqualTo: society)
         .orderBy('date', descending: true)
+        .limit(50)
         .snapshots();
   }
 
@@ -93,6 +94,12 @@ class FirestoreService {
       likes: d['likes'] ?? 0,
       category: d['category'] ?? 'General',
       attachmentName: d['attachmentName'],
+      comments: (d['comments'] as List<dynamic>?)?.map((c) => Comment(
+        id: c['id'] ?? '',
+        author: c['author'] ?? '',
+        text: c['text'] ?? '',
+        date: (c['date'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      )).toList() ?? [],
     );
   }
 
@@ -129,6 +136,7 @@ class FirestoreService {
     return _complaints
         .where('society', isEqualTo: society)
         .orderBy('date', descending: true)
+        .limit(50)
         .snapshots();
   }
 
@@ -189,6 +197,7 @@ class FirestoreService {
     return _events
         .where('society', isEqualTo: society)
         .orderBy('date', descending: false)
+        .limit(30)
         .snapshots();
   }
 
@@ -243,6 +252,7 @@ class FirestoreService {
     return _polls
         .where('society', isEqualTo: society)
         .orderBy('endDate', descending: true)
+        .limit(20)
         .snapshots();
   }
 
@@ -347,7 +357,7 @@ class FirestoreService {
     return _gateLog
         .where('society', isEqualTo: society)
         .orderBy('timeIn', descending: true)
-        .limit(50)
+        .limit(100)
         .snapshots();
   }
 
@@ -386,7 +396,7 @@ class FirestoreService {
   static Stream<QuerySnapshot> billsStream(String society, {String? flat}) {
     Query q = _bills.where('society', isEqualTo: society);
     if (flat != null) q = q.where('flat', isEqualTo: flat);
-    return q.orderBy('dueDate', descending: true).snapshots();
+    return q.orderBy('dueDate', descending: true).limit(50).snapshots();
   }
 
   static Bill billFromDoc(DocumentSnapshot doc) {
@@ -432,6 +442,7 @@ class FirestoreService {
     return _marketplace
         .where('society', isEqualTo: society)
         .orderBy('date', descending: true)
+        .limit(50)
         .snapshots();
   }
 
@@ -478,6 +489,7 @@ class FirestoreService {
     return _services
         .where('society', isEqualTo: society)
         .orderBy('shopName')
+        .limit(30)
         .snapshots();
   }
 

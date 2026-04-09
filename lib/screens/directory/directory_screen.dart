@@ -7,6 +7,7 @@ import '../../utils/helpers.dart';
 import '../../utils/app_colors.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
+import '../../services/auth_service.dart';
 import '../chat/chat_screen.dart';
 
 class DirectoryScreen extends StatefulWidget {
@@ -69,6 +70,11 @@ class _DirectoryScreenState extends State<DirectoryScreen> with SingleTickerProv
         }
       });
       await PrefsService.setBlockedUserIds(_blockedIds.toList());
+      if (AuthService.uid.isNotEmpty) {
+        FirestoreService.updateDoc('users', AuthService.uid, {
+          'blockedUserIds': _blockedIds.toList(),
+        });
+      }
     }
   }
 

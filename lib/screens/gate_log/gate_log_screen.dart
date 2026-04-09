@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/models.dart';
@@ -16,6 +17,7 @@ class GateLogScreen extends StatefulWidget {
 
 class _GateLogScreenState extends State<GateLogScreen> {
   bool _showMyFlat = false;
+  int _displayCount = 50;
 
   List<GateEntry> _applyFilter(List<GateEntry> entries) {
     if (!_showMyFlat) return entries;
@@ -64,13 +66,23 @@ class _GateLogScreenState extends State<GateLogScreen> {
             ));
           }
 
+          final displayedCount = min(_displayCount, filtered.length);
           return RefreshIndicator(
             color: AppColors.primaryAmber,
             onRefresh: () async => setState(() {}),
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: filtered.length,
+              itemCount: displayedCount + (filtered.length > _displayCount ? 1 : 0),
               itemBuilder: (_, i) {
+                if (i == displayedCount) {
+                  return Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: OutlinedButton(
+                      onPressed: () => setState(() => _displayCount += 50),
+                      child: Text('Load More (${filtered.length - _displayCount} remaining)'),
+                    ),
+                  );
+                }
                 final e = filtered[i];
                 return Card(
                   child: Padding(
@@ -90,7 +102,7 @@ class _GateLogScreenState extends State<GateLogScreen> {
                                 color: e.exited ? AppColors.textSecondary : AppColors.statusSuccess,
                               ),
                             ),
-                            if (i < filtered.length - 1) Container(
+                            if (i < displayedCount - 1) Container(
                               width: 2, height: 30,
                               color: AppColors.cardBorder,
                             ),
