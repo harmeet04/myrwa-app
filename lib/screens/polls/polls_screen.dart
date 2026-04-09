@@ -38,9 +38,8 @@ class _PollsScreenState extends State<PollsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final cs = Theme.of(context).colorScheme;
     return Scaffold(
-      appBar: AppBar(title: const Text('Polls & Voting')),
+      appBar: AppBar(title: const Text('Polls')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showCreatePoll(context),
         icon: const Icon(Icons.add),
@@ -67,13 +66,7 @@ class _PollsScreenState extends State<PollsScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Row(children: [
-                            Expanded(child: Text(p.question, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
-                            if (p.isAnonymous) Tooltip(
-                              message: 'Anonymous',
-                              child: Icon(Icons.visibility_off, size: 18, color: AppColors.textTertiary),
-                            ),
-                          ]),
+                          Text(p.question, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                           const SizedBox(height: 6),
                           Row(children: [
                             Icon(Icons.person_outline, size: 14, color: AppColors.textTertiary),
@@ -94,76 +87,89 @@ class _PollsScreenState extends State<PollsScreen> {
                             ),
                           ]),
                           const SizedBox(height: 16),
-                          ...List.generate(p.options.length, (oi) {
-                            final pct = p.totalVotes > 0 ? p.votes[oi] / p.totalVotes : 0.0;
-                            final isSelected = p.votedIndex == oi;
-                            final isWinner = voted && p.votes[oi] == p.votes.reduce((a, b) => a > b ? a : b);
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: 8),
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(12),
-                                onTap: voted || !p.isActive ? null : () {
-                                  HapticFeedback.mediumImpact();
-                                  setState(() { p.votes[oi]++; p.votedIndex = oi; });
-                                  PrefsService.savePollVote(p.id, oi);
-                                  AnalyticsService.logPollVoted(p.id);
-                                  // Animated confirmation
-                                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                                    content: Row(children: [
-                                      const Icon(Icons.check_circle, color: Colors.white),
-                                      const SizedBox(width: 8),
-                                      Text('Voted for "${p.options[oi]}"'),
+                          if (!voted)
+                            ...List.generate(p.options.length, (oi) {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: 8),
+                                child: InkWell(
+                                  borderRadius: BorderRadius.circular(12),
+                                  onTap: !p.isActive ? null : () {
+                                    HapticFeedback.mediumImpact();
+                                    setState(() { p.votes[oi]++; p.votedIndex = oi; });
+                                    PrefsService.savePollVote(p.id, oi);
+                                    AnalyticsService.logPollVoted(p.id);
+                                    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                      content: Row(children: [
+                                        const Icon(Icons.check_circle, color: Colors.white),
+                                        const SizedBox(width: 8),
+                                        Text('Voted for "${p.options[oi]}"'),
+                                      ]),
+                                      backgroundColor: AppColors.statusSuccess,
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                      duration: const Duration(seconds: 2),
+                                    ));
+                                  },
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(color: AppColors.cardBorder),
+                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                    child: Row(children: [
+                                      Icon(Icons.radio_button_unchecked, size: 18, color: AppColors.textTertiary),
+                                      const SizedBox(width: 10),
+                                      Expanded(child: Text(p.options[oi])),
                                     ]),
-                                    backgroundColor: AppColors.statusSuccess,
-                                    behavior: SnackBarBehavior.floating,
-                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                    duration: const Duration(seconds: 2),
-                                  ));
-                                },
-                                child: AnimatedContainer(
-                                  duration: const Duration(milliseconds: 300),
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(color: isSelected ? cs.primary : (isWinner ? AppColors.statusSuccess : AppColors.cardBorder), width: isSelected ? 2 : 1),
-                                    color: isSelected ? cs.primary.withValues(alpha: 0.05) : (isWinner ? AppColors.statusSuccess.withValues(alpha: 0.03) : null),
-                                  ),
-                                  clipBehavior: Clip.antiAlias,
-                                  child: Stack(
-                                    children: [
-                                      if (voted) AnimatedContainer(
-                                        duration: const Duration(milliseconds: 500),
-                                        curve: Curves.easeOut,
-                                        height: 48,
-                                        width: MediaQuery.of(context).size.width * pct * 0.85,
-                                        decoration: BoxDecoration(
-                                          color: isSelected ? cs.primary.withValues(alpha: 0.12) : Colors.grey.withValues(alpha: 0.06),
-                                          borderRadius: const BorderRadius.horizontal(right: Radius.circular(12)),
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                        child: Row(children: [
-                                          if (!voted) Icon(Icons.radio_button_unchecked, size: 18, color: AppColors.textTertiary),
-                                          if (voted && isSelected) Icon(Icons.check_circle, size: 18, color: cs.primary),
-                                          if (voted && !isSelected) Icon(Icons.circle_outlined, size: 18, color: AppColors.textTertiary),
-                                          const SizedBox(width: 10),
-                                          Expanded(child: Text(p.options[oi], style: TextStyle(fontWeight: isSelected ? FontWeight.w600 : null))),
-                                          if (voted) ...[
-                                            Text('${p.votes[oi]}', style: TextStyle(fontSize: 12, color: AppColors.textTertiary)),
-                                            const SizedBox(width: 6),
-                                            Text('${(pct * 100).toInt()}%', style: TextStyle(
-                                              fontWeight: FontWeight.bold, fontSize: 14,
-                                              color: isSelected ? cs.primary : (isWinner ? AppColors.statusSuccess : AppColors.textSecondary),
-                                            )),
-                                          ],
-                                        ]),
-                                      ),
-                                    ],
                                   ),
                                 ),
-                              ),
-                            );
-                          }),
+                              );
+                            })
+                          else
+                            ...() {
+                              const barColors = [
+                                AppColors.primaryAmber,
+                                AppColors.statusSuccess,
+                                AppColors.primaryOrange,
+                                Color(0xFF7C3AED),
+                                Color(0xFF3B82F6),
+                              ];
+                              return List.generate(p.options.length, (oi) {
+                                final voteCount = p.votes[oi];
+                                final totalVotes = p.totalVotes;
+                                final percentage = totalVotes > 0 ? voteCount / totalVotes : 0.0;
+                                final isSelected = p.votedIndex == oi;
+                                final barColor = barColors[oi % barColors.length];
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 12),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(children: [
+                                        if (isSelected) ...[
+                                          Icon(Icons.check_circle, size: 16, color: barColor),
+                                          const SizedBox(width: 6),
+                                        ],
+                                        Expanded(child: Text(p.options[oi], style: TextStyle(fontSize: 13, fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500))),
+                                        Text('$voteCount votes', style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                      ]),
+                                      const SizedBox(height: 4),
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(6),
+                                        child: LinearProgressIndicator(
+                                          value: totalVotes > 0 ? voteCount / totalVotes : 0,
+                                          minHeight: 8,
+                                          backgroundColor: AppColors.cardBorder,
+                                          valueColor: AlwaysStoppedAnimation<Color>(barColor),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text('${(percentage * 100).toStringAsFixed(0)}%', style: TextStyle(fontSize: 11, color: AppColors.textTertiary)),
+                                    ],
+                                  ),
+                                );
+                              });
+                            }(),
                           const SizedBox(height: 4),
                           Row(children: [
                             Icon(Icons.people_outline, size: 14, color: AppColors.textTertiary),
@@ -189,7 +195,6 @@ class _PollsScreenState extends State<PollsScreen> {
   void _showCreatePoll(BuildContext context) {
     final questionCtrl = TextEditingController();
     final optionCtrls = [TextEditingController(), TextEditingController()];
-    bool isAnonymous = false;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -216,12 +221,6 @@ class _PollsScreenState extends State<PollsScreen> {
                   onPressed: () => setBS(() => optionCtrls.add(TextEditingController())),
                   icon: const Icon(Icons.add), label: const Text('Add Option'),
                 ),
-                SwitchListTile(
-                  title: const Text('Anonymous Voting'),
-                  value: isAnonymous,
-                  onChanged: (v) => setBS(() => isAnonymous = v),
-                  contentPadding: EdgeInsets.zero,
-                ),
                 const SizedBox(height: 8),
                 FilledButton(
                   onPressed: () {
@@ -233,7 +232,7 @@ class _PollsScreenState extends State<PollsScreen> {
                           question: questionCtrl.text, options: options,
                           votes: List.filled(options.length, 0), totalVoters: 0,
                           endDate: DateTime.now().add(const Duration(days: 7)),
-                          createdBy: 'You', isAnonymous: isAnonymous,
+                          createdBy: 'You',
                         ));
                       });
                       Navigator.pop(ctx);
