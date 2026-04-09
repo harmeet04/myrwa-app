@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import '../models/models.dart';
 import '../utils/prefs_service.dart';
 import 'auth_service.dart';
@@ -88,20 +89,26 @@ class FirestoreService {
     );
   }
 
-  static Future<void> addNotice(Notice n) async {
-    await _notices.add({
-      'title': n.title,
-      'body': n.body,
-      'author': n.author,
-      'authorFlat': n.authorFlat,
-      'date': Timestamp.fromDate(n.date),
-      'isPinned': n.isPinned,
-      'likes': n.likes,
-      'category': n.category,
-      'attachmentName': n.attachmentName,
-      'society': PrefsService.societyName,
-      'createdBy': AuthService.uid,
-    });
+  static Future<bool> addNotice(Notice n) async {
+    try {
+      await _notices.add({
+        'title': n.title,
+        'body': n.body,
+        'author': n.author,
+        'authorFlat': n.authorFlat,
+        'date': Timestamp.fromDate(n.date),
+        'isPinned': n.isPinned,
+        'likes': n.likes,
+        'category': n.category,
+        'attachmentName': n.attachmentName,
+        'society': PrefsService.societyName,
+        'createdBy': AuthService.uid,
+      });
+      return true;
+    } catch (e) {
+      debugPrint('Error adding notice: $e');
+      return false;
+    }
   }
 
   static Future<void> updateNotice(String id, Map<String, dynamic> data) async {
@@ -141,21 +148,27 @@ class FirestoreService {
     );
   }
 
-  static Future<void> addComplaint(Complaint c) async {
-    await _complaints.add({
-      'title': c.title,
-      'description': c.description,
-      'category': c.category,
-      'status': c.status.name,
-      'priority': c.priority.name,
-      'raisedBy': c.raisedBy,
-      'flat': c.flat,
-      'date': Timestamp.fromDate(c.date),
-      'adminResponse': c.adminResponse,
-      'hasPhoto': c.hasPhoto,
-      'society': PrefsService.societyName,
-      'createdBy': AuthService.uid,
-    });
+  static Future<bool> addComplaint(Complaint c) async {
+    try {
+      await _complaints.add({
+        'title': c.title,
+        'description': c.description,
+        'category': c.category,
+        'status': c.status.name,
+        'priority': c.priority.name,
+        'raisedBy': c.raisedBy,
+        'flat': c.flat,
+        'date': Timestamp.fromDate(c.date),
+        'adminResponse': c.adminResponse,
+        'hasPhoto': c.hasPhoto,
+        'society': PrefsService.societyName,
+        'createdBy': AuthService.uid,
+      });
+      return true;
+    } catch (e) {
+      debugPrint('Error adding complaint: $e');
+      return false;
+    }
   }
 
   static Future<void> updateComplaint(String id, Map<String, dynamic> data) async {
@@ -501,16 +514,22 @@ class FirestoreService {
         .snapshots();
   }
 
-  static Future<void> sendSosAlert(String type) async {
-    await _sosAlerts.add({
-      'type': type,
-      'flat': PrefsService.userFlat,
-      'userName': PrefsService.userName,
-      'time': FieldValue.serverTimestamp(),
-      'isActive': true,
-      'society': PrefsService.societyName,
-      'userId': AuthService.uid,
-    });
+  static Future<bool> sendSosAlert(String type) async {
+    try {
+      await _sosAlerts.add({
+        'type': type,
+        'flat': PrefsService.userFlat,
+        'userName': PrefsService.userName,
+        'time': FieldValue.serverTimestamp(),
+        'isActive': true,
+        'society': PrefsService.societyName,
+        'userId': AuthService.uid,
+      });
+      return true;
+    } catch (e) {
+      debugPrint('Error sending SOS alert: $e');
+      return false;
+    }
   }
 
   // ──── GENERIC COLLECTIONS (for screens with local mock data) ────
@@ -525,12 +544,24 @@ class FirestoreService {
     return await _db.collection(collectionName).add(data);
   }
 
-  static Future<void> updateDoc(String collectionName, String docId, Map<String, dynamic> data) async {
-    await _db.collection(collectionName).doc(docId).update(data);
+  static Future<bool> updateDoc(String collectionName, String docId, Map<String, dynamic> data) async {
+    try {
+      await _db.collection(collectionName).doc(docId).update(data);
+      return true;
+    } catch (e) {
+      debugPrint('Error updating doc $collectionName/$docId: $e');
+      return false;
+    }
   }
 
-  static Future<void> deleteDoc(String collectionName, String docId) async {
-    await _db.collection(collectionName).doc(docId).delete();
+  static Future<bool> deleteDoc(String collectionName, String docId) async {
+    try {
+      await _db.collection(collectionName).doc(docId).delete();
+      return true;
+    } catch (e) {
+      debugPrint('Error deleting doc $collectionName/$docId: $e');
+      return false;
+    }
   }
 
   static Stream<QuerySnapshot> collectionStream(String collectionName, String society) {

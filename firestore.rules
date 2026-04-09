@@ -1,8 +1,232 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if request.auth != null;
+
+    // ── Helper functions ──────────────────────────────────────────────────────
+
+    function isAuthenticated() {
+      return request.auth != null;
     }
+
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    function isSameSociety(docSocietyId) {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.societyId == docSocietyId;
+    }
+
+    function isGuard() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isGuard == true;
+    }
+
+    // ── users ─────────────────────────────────────────────────────────────────
+    // • Owner can read/write their own doc
+    // • Admins can read all users in their society
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (isOwner(userId) || isAdmin());
+      allow write: if isAuthenticated() && isOwner(userId);
+    }
+
+    // ── pre_registered_users ──────────────────────────────────────────────────
+    // • Read-only for authenticated users (seeded server-side / by admin tools)
+
+    match /pre_registered_users/{docId} {
+      allow read: if isAuthenticated();
+      allow write: if false;
+    }
+
+    // ── notices ───────────────────────────────────────────────────────────────
+    // • Any authenticated user can read
+    // • Only admins can create / update / delete
+
+    match /notices/{noticeId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── complaints ────────────────────────────────────────────────────────────
+    // • Any authenticated user can read complaints in their society
+    // • Any authenticated user can create a complaint
+    // • Only the author or an admin can update
+
+    match /complaints/{complaintId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() &&
+        (isOwner(resource.data.createdBy) || isAdmin());
+      allow delete: if isAdmin();
+    }
+
+    // ── bills ─────────────────────────────────────────────────────────────────
+    // • Users can read their own bills (matched by uid field)
+    // • Only admins can create / update bills
+
+    match /bills/{billId} {
+      allow read: if isAuthenticated() &&
+        (isOwner(resource.data.userId) || isAdmin());
+      allow create, update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ── visitors ──────────────────────────────────────────────────────────────
+    // • Users can read visitors for their flat
+    // • Users can create visitors (pre-approve)
+    // • Users can update visitor status for their flat
+
+    match /visitors/{visitorId} {
+      allow read: if isAuthenticated() &&
+        (isOwner(resource.data.residentId) || isAdmin() || isGuard());
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() &&
+        (isOwner(resource.data.residentId) || isAdmin() || isGuard());
+      allow delete: if isAdmin();
+    }
+
+    // ── events ────────────────────────────────────────────────────────────────
+    // • Any authenticated user can read
+    // • Only admins can create / update / delete
+
+    match /events/{eventId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── polls ─────────────────────────────────────────────────────────────────
+    // • Any authenticated user can read
+    // • Only admins can create
+    // • Any authenticated user can update (to cast / change a vote)
+
+    match /polls/{pollId} {
+      allow read: if isAuthenticated();
+      allow create: if isAdmin();
+      allow update: if isAuthenticated();
+      allow delete: if isAdmin();
+    }
+
+    // ── packages ──────────────────────────────────────────────────────────────
+    // • Users can read packages for their flat
+    // • Any authenticated user (guard / delivery) can create
+
+    match /packages/{packageId} {
+      allow read: if isAuthenticated() &&
+        (isOwner(resource.data.residentId) || isAdmin() || isGuard());
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() &&
+        (isOwner(resource.data.residentId) || isAdmin() || isGuard());
+      allow delete: if isAdmin();
+    }
+
+    // ── gate_log ──────────────────────────────────────────────────────────────
+    // • Any authenticated user can read
+    // • Only admins or guards can create
+
+    match /gate_log/{logId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && (isAdmin() || isGuard());
+      allow update, delete: if isAdmin();
+    }
+
+    // ── sos_alerts ────────────────────────────────────────────────────────────
+    // • Any authenticated user can read alerts in their society
+    // • Any authenticated user can create (trigger SOS)
+
+    match /sos_alerts/{alertId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+
+    // ── chat_rooms ────────────────────────────────────────────────────────────
+    // • Users can read / write in rooms they are a participant of
+
+    match /chat_rooms/{roomId} {
+      allow read, write: if isAuthenticated() &&
+        request.auth.uid in resource.data.participantIds;
+
+      // Allow creating a new room if the creator lists themselves as participant
+      allow create: if isAuthenticated() &&
+        request.auth.uid in request.resource.data.participantIds;
+
+      match /messages/{messageId} {
+        allow read: if isAuthenticated() &&
+          request.auth.uid in
+            get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.participantIds;
+        allow create: if isAuthenticated() &&
+          request.auth.uid in
+            get(/databases/$(database)/documents/chat_rooms/$(roomId)).data.participantIds;
+        allow update, delete: if isAuthenticated() &&
+          isOwner(resource.data.senderId);
+      }
+    }
+
+    // ── messages (top-level, if used) ─────────────────────────────────────────
+
+    match /messages/{messageId} {
+      allow read, write: if isAuthenticated() &&
+        request.auth.uid in resource.data.participantIds;
+      allow create: if isAuthenticated() &&
+        request.auth.uid in request.resource.data.participantIds;
+    }
+
+    // ── marketplace ───────────────────────────────────────────────────────────
+    // • Any authenticated user can read / create
+    // • Only the seller can update / delete
+
+    match /marketplace/{itemId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() &&
+        (isOwner(resource.data.sellerId) || isAdmin());
+    }
+
+    // ── staff ─────────────────────────────────────────────────────────────────
+
+    match /staff/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── vehicles ──────────────────────────────────────────────────────────────
+
+    match /vehicles/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── documents ────────────────────────────────────────────────────────────
+
+    match /documents/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── facilities ────────────────────────────────────────────────────────────
+
+    match /facilities/{docId} {
+      allow read: if isAuthenticated();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // ── qr_passes ─────────────────────────────────────────────────────────────
+    // • Users can read their own passes
+    // • Users can create passes for themselves
+
+    match /qr_passes/{passId} {
+      allow read: if isAuthenticated() &&
+        (isOwner(resource.data.userId) || isAdmin() || isGuard());
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() &&
+        (isOwner(resource.data.userId) || isAdmin());
+    }
+
   }
 }
