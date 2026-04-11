@@ -115,6 +115,7 @@ class _PollsScreenState extends State<PollsScreen> {
                                   HapticFeedback.mediumImpact();
                                   setState(() { p.votes[oi]++; p.votedIndex = oi; });
                                   PrefsService.savePollVote(p.id, oi);
+                                  FirestoreService.votePoll(p.id, oi);
                                   AnalyticsService.logPollVoted(p.id);
                                   KarmaService.addPoints(KarmaService.pollVote, 'Voted in poll');
                                   KarmaService.showKarmaToast(context, KarmaService.pollVote, 'Voted in poll');
@@ -196,17 +197,111 @@ class _PollsScreenState extends State<PollsScreen> {
                           const SizedBox(width: 4),
                           Text('${p.totalVotes} votes', style: TextStyle(fontSize: 12, color: AppColors.textTertiary, fontWeight: FontWeight.w500)),
                           if (voted) ...[
-                            const Spacer(),
+                            const SizedBox(width: 8),
                             Icon(Icons.check, size: 14, color: AppColors.statusSuccess),
                             const SizedBox(width: 4),
                             Text('You voted', style: TextStyle(fontSize: 12, color: AppColors.statusSuccess)),
                           ],
+                          const Spacer(),
+                          GestureDetector(
+                            onTap: () => _showVoters(context, p),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.amberBg,
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(color: AppColors.amberBorder),
+                              ),
+                              child: const Text('View Voters', style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: AppColors.textOnPrimary)),
+                            ),
+                          ),
                         ]),
                       ],
                     ),
                   ),
                 );
               },
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showVoters(BuildContext context, Poll p) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => FutureBuilder<Map<String, dynamic>>(
+        future: FirestoreService.getPollVoters(p.id),
+        builder: (context, snap) {
+          final voters = snap.data ?? {};
+          // Group voters by option
+          final byOption = <int, List<Map<String, dynamic>>>{};
+          for (final entry in voters.values) {
+            final m = entry as Map<String, dynamic>;
+            final oi = (m['option'] as int?) ?? 0;
+            byOption.putIfAbsent(oi, () => []).add(m);
+          }
+
+          return Container(
+            padding: const EdgeInsets.all(20),
+            constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.6),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Voters — ${p.question}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                Text('${voters.length} total votes', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                const Divider(height: 20),
+                if (voters.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(child: Text('No votes yet', style: TextStyle(color: AppColors.textTertiary))),
+                  )
+                else
+                  Flexible(
+                    child: ListView(
+                      shrinkWrap: true,
+                      children: List.generate(p.options.length, (oi) {
+                        final optionVoters = byOption[oi] ?? [];
+                        if (optionVoters.isEmpty) return const SizedBox.shrink();
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(top: 8, bottom: 4),
+                              child: Text(
+                                '${p.options[oi]} (${optionVoters.length})',
+                                style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                              ),
+                            ),
+                            ...optionVoters.map((v) => Padding(
+                              padding: const EdgeInsets.only(left: 8, bottom: 4),
+                              child: Row(
+                                children: [
+                                  CircleAvatar(
+                                    radius: 12,
+                                    backgroundColor: AppColors.amberBg,
+                                    child: Text(
+                                      ((v['name'] as String?) ?? 'U')[0].toUpperCase(),
+                                      style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: AppColors.primaryAmber),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(v['name'] ?? 'Unknown', style: const TextStyle(fontSize: 13)),
+                                  const SizedBox(width: 4),
+                                  Text('(${v['flat'] ?? ''})', style: TextStyle(fontSize: 11, color: AppColors.textTertiary)),
+                                ],
+                              ),
+                            )),
+                          ],
+                        );
+                      }),
+                    ),
+                  ),
+              ],
             ),
           );
         },

@@ -107,7 +107,7 @@ service cloud.firestore {
 
     match /polls/{pollId} {
       allow read: if isAuthenticated();
-      allow create: if isAdmin();
+      allow create: if isAuthenticated();
       allow update: if isAuthenticated();
       allow delete: if isAdmin();
     }

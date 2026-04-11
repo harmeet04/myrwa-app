@@ -290,13 +290,30 @@ class FirestoreService {
   }
 
   static Future<void> votePoll(String pollId, int optionIndex) async {
+    final userName = PrefsService.userName.isEmpty ? 'User' : PrefsService.userName;
+    final userFlat = PrefsService.userFlat;
     await _db.runTransaction((tx) async {
       final doc = _polls.doc(pollId);
       final snap = await tx.get(doc);
-      final votes = List<int>.from((snap.data() as Map)['votes'] ?? []);
+      final data = snap.data() as Map<String, dynamic>;
+      final votes = List<int>.from(data['votes'] ?? []);
       votes[optionIndex]++;
-      tx.update(doc, {'votes': votes});
+      final voters = Map<String, dynamic>.from(data['voters'] ?? {});
+      voters[AuthService.uid] = {
+        'name': userName,
+        'flat': userFlat,
+        'option': optionIndex,
+        'time': Timestamp.now(),
+      };
+      tx.update(doc, {'votes': votes, 'voters': voters});
     });
+  }
+
+  static Future<Map<String, dynamic>> getPollVoters(String pollId) async {
+    final doc = await _polls.doc(pollId).get();
+    if (!doc.exists) return {};
+    final data = doc.data() as Map<String, dynamic>;
+    return Map<String, dynamic>.from(data['voters'] ?? {});
   }
 
   // ──── VISITORS ────
