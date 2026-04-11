@@ -11,6 +11,7 @@ import 'screens/splash/splash_screen.dart';
 import 'services/analytics_service.dart';
 import 'services/notification_provider.dart';
 import 'services/notification_service.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
 void main() async {
   runZonedGuarded(() async {
@@ -21,7 +22,7 @@ void main() async {
     // Global error handler
     FlutterError.onError = (details) {
       FlutterError.presentError(details);
-      debugPrint('FlutterError: ${details.exceptionAsString()}');
+      FirebaseCrashlytics.instance.recordFlutterFatalError(details);
     };
 
     runApp(
@@ -34,8 +35,7 @@ void main() async {
       ),
     );
   }, (error, stack) {
-    debugPrint('Uncaught error: $error');
-    debugPrint('Stack: $stack');
+    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
   });
 }
 
