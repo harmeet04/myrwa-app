@@ -61,6 +61,18 @@ Return ONLY the polished text, no markdown formatting.''';
     }
   }
 
+  /// Chat with Gemini using system context and user message
+  static Future<String> chat(String systemContext, String userMessage) async {
+    try {
+      final response = await model.generateContent([
+        Content.text('$systemContext\n\nUser question: $userMessage'),
+      ]);
+      return response.text ?? 'Sorry, I couldn\'t understand that. Try again?';
+    } catch (e) {
+      return 'I\'m having trouble connecting. Please try again later.';
+    }
+  }
+
   /// Translate text to Hindi
   static Future<String> translateToHindi(String text) async {
     final prompt = '''Translate the following English text to Hindi (Devanagari script). Return ONLY the Hindi translation, nothing else.
