@@ -23,6 +23,8 @@ import '../qr_pass/qr_pass_screen.dart';
 import '../sos/sos_screen.dart';
 import '../complaints/complaints_screen.dart';
 import '../directory/directory_screen.dart';
+import '../ai_assistant/ai_assistant_screen.dart';
+import '../karma/leaderboard_screen.dart';
 import 'community_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -720,6 +722,7 @@ class _QuickAccessSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final isGated = PrefsService.isGatedCommunity;
     final tiles = [
+      _QuickTile('\u{1F916}', 'AI Assistant', AppColors.amberBg, AppColors.amberBorder, const AiAssistantScreen()),
       if (isGated)
         _QuickTile('\u{1F6B6}', 'Visitors', AppColors.amberBg, AppColors.amberBorder, const VisitorsScreen()),
       if (isGated)
@@ -732,6 +735,7 @@ class _QuickAccessSection extends StatelessWidget {
         _QuickTile('\u{1F6AA}', 'Gate Log', AppColors.greenBg, AppColors.greenBorder, const GateLogScreen()),
       if (isGated)
         _QuickTile('\u{1F511}', 'QR Pass', AppColors.blueBg, AppColors.blueBorder, const QrPassScreen()),
+      _QuickTile('\u{1F31F}', 'Karma', AppColors.purpleBg, AppColors.purpleBorder, const LeaderboardScreen()),
     ];
 
     return Column(

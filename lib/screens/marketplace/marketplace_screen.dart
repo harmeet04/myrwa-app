@@ -8,6 +8,7 @@ import '../../models/models.dart';
 import '../../utils/app_colors.dart';
 import '../../services/firestore_service.dart';
 import '../../services/storage_service.dart';
+import '../../services/karma_service.dart';
 import '../chat/chat_screen.dart';
 
 class MarketplaceScreen extends StatefulWidget {
@@ -460,7 +461,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                         photoUrl: photoUrl,
                       );
                       FirestoreService.addMarketItem(item);
+                      KarmaService.addPoints(KarmaService.marketplaceListing, 'Listed marketplace item');
                       if (!context.mounted) return;
+                      KarmaService.showKarmaToast(context, KarmaService.marketplaceListing, 'Listed marketplace item');
                       Navigator.pop(ctx);
                       showSnack(context, '\u2705 Item listed!');
                     }

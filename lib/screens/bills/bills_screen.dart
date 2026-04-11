@@ -7,6 +7,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
 import '../../services/analytics_service.dart';
+import '../../services/karma_service.dart';
 import '../../widgets/error_retry.dart';
 
 class BillsScreen extends StatefulWidget {
@@ -38,6 +39,8 @@ class _BillsScreenState extends State<BillsScreen> {
   void _markAsPaid(Bill b) {
     PrefsService.markBillPaid(b.id);
     AnalyticsService.logBillPaid(b.amount.toDouble());
+    KarmaService.addPoints(KarmaService.billOnTime, 'Paid bill on time');
+    KarmaService.showKarmaToast(context, KarmaService.billOnTime, 'Paid bill on time');
     setState(() {});
     showSnack(context, '${b.title} marked as paid');
   }

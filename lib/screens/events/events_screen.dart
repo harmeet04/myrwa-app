@@ -5,6 +5,7 @@ import '../../utils/helpers.dart';
 import '../../models/models.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
+import '../../services/karma_service.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/error_retry.dart';
 
@@ -111,6 +112,8 @@ class _EventsScreenState extends State<EventsScreen> {
                                 onPressed: () {
                                   setState(() { e.hasRsvpd = true; e.rsvpCount++; });
                                   PrefsService.saveRsvp(e.id, true, e.plusOnes);
+                                  KarmaService.addPoints(KarmaService.eventRsvp, 'RSVP to event');
+                                  KarmaService.showKarmaToast(context, KarmaService.eventRsvp, 'RSVP to event');
                                 },
                                 child: const Text('RSVP'),
                               )

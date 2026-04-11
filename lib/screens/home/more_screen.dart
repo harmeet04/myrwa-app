@@ -15,7 +15,9 @@ import '../vendor/vendor_screen.dart';
 import '../accounting/accounting_screen.dart';
 import '../documents/documents_screen.dart';
 import '../guard/guard_screen.dart';
+import '../ai_assistant/ai_assistant_screen.dart';
 import '../visitors/visitors_screen.dart';
+import '../karma/leaderboard_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   final VoidCallback onThemeToggle;
@@ -32,6 +34,15 @@ class MoreScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
         children: [
+          _MoreTile(
+            icon: Icons.smart_toy,
+            title: 'AI Assistant',
+            subtitle: 'Ask anything about your society',
+            iconColor: AppColors.primaryAmber,
+            bgColor: AppColors.amberBg,
+            onTap: () => _push(context, const AiAssistantScreen()),
+          ),
+          const Divider(height: 1, indent: 16, endIndent: 16),
           _SectionHeader('Finances'),
           _MoreTile(
             icon: Icons.receipt_long,
@@ -122,6 +133,14 @@ class MoreScreen extends StatelessWidget {
             iconColor: const Color(0xFF7C3AED),
             bgColor: AppColors.purpleBg,
             onTap: () => _push(context, const VendorScreen()),
+          ),
+          _MoreTile(
+            icon: Icons.stars,
+            title: 'Community Karma',
+            subtitle: 'Points, badges & leaderboard',
+            iconColor: const Color(0xFF7C3AED),
+            bgColor: AppColors.purpleBg,
+            onTap: () => _push(context, const LeaderboardScreen()),
           ),
 
           if (PrefsService.isAdmin) ...[
