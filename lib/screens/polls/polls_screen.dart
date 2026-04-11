@@ -8,6 +8,7 @@ import '../../utils/prefs_service.dart';
 import '../../utils/app_colors.dart';
 import '../../services/firestore_service.dart';
 import '../../services/analytics_service.dart';
+import '../../widgets/error_retry.dart';
 
 class PollsScreen extends StatefulWidget {
   const PollsScreen({super.key});
@@ -38,6 +39,12 @@ class _PollsScreenState extends State<PollsScreen> {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirestoreService.pollsStream(society),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return ErrorRetry(
+              message: 'Failed to load data',
+              onRetry: () => setState(() {}),
+            );
+          }
           List<Poll> polls;
           if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
             polls = snapshot.data!.docs

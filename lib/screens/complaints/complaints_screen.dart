@@ -18,6 +18,7 @@ import '../../widgets/status_chip.dart';
 import '../../widgets/priority_badge.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loader.dart';
+import '../../widgets/error_retry.dart';
 import '../chat/chat_screen.dart';
 import '../../services/analytics_service.dart';
 
@@ -70,6 +71,12 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirestoreService.complaintsStream(society),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return ErrorRetry(
+              message: 'Failed to load data',
+              onRetry: () => setState(() {}),
+            );
+          }
           List<Complaint> complaints;
           if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
             complaints = snapshot.data!.docs.map((d) => FirestoreService.complaintFromDoc(d)).toList();

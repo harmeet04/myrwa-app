@@ -7,6 +7,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
 import '../../services/analytics_service.dart';
+import '../../widgets/error_retry.dart';
 
 class BillsScreen extends StatefulWidget {
   const BillsScreen({super.key});
@@ -63,6 +64,12 @@ class _BillsScreenState extends State<BillsScreen> {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirestoreService.billsStream(society),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return ErrorRetry(
+              message: 'Failed to load data',
+              onRetry: () => setState(() {}),
+            );
+          }
           List<Bill> allBills;
           if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
             allBills = snapshot.data!.docs

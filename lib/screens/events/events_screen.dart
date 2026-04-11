@@ -6,6 +6,7 @@ import '../../models/models.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
 import '../../utils/app_colors.dart';
+import '../../widgets/error_retry.dart';
 
 class EventsScreen extends StatefulWidget {
   const EventsScreen({super.key});
@@ -24,6 +25,12 @@ class _EventsScreenState extends State<EventsScreen> {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirestoreService.eventsStream(society),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return ErrorRetry(
+              message: 'Failed to load data',
+              onRetry: () => setState(() {}),
+            );
+          }
           List<Event> events;
           if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
             events = snapshot.data!.docs

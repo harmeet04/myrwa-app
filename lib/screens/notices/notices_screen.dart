@@ -12,6 +12,7 @@ import '../../widgets/filter_chip_bar.dart';
 import '../../widgets/warm_card.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/shimmer_loader.dart';
+import '../../widgets/error_retry.dart';
 import '../../services/analytics_service.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -82,6 +83,12 @@ class _NoticesScreenState extends State<NoticesScreen> {
             child: StreamBuilder<QuerySnapshot>(
               stream: FirestoreService.noticesStream(society),
               builder: (context, snapshot) {
+                if (snapshot.hasError) {
+                  return ErrorRetry(
+                    message: 'Failed to load data',
+                    onRetry: () => setState(() {}),
+                  );
+                }
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const ShimmerLoader(itemCount: 4);
                 }

@@ -12,6 +12,7 @@ import '../../widgets/filter_chip_bar.dart';
 import '../../widgets/warm_card.dart';
 import '../../widgets/status_chip.dart';
 import '../../widgets/empty_state.dart';
+import '../../widgets/error_retry.dart';
 import '../../services/analytics_service.dart';
 
 class VisitorsScreen extends StatefulWidget {
@@ -54,6 +55,12 @@ class _VisitorsScreenState extends State<VisitorsScreen> {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirestoreService.visitorsStream(society),
         builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return ErrorRetry(
+              message: 'Failed to load data',
+              onRetry: () => setState(() {}),
+            );
+          }
           List<Visitor> visitors;
           if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
             visitors = snapshot.data!.docs

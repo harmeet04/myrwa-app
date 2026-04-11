@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../utils/app_colors.dart';
+import 'error_retry.dart';
 
 /// A reusable widget that handles Firestore stream loading/error/empty states
 class FirestoreStreamBuilder<T> extends StatelessWidget {
@@ -25,21 +26,7 @@ class FirestoreStreamBuilder<T> extends StatelessWidget {
       stream: stream,
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.error_outline, size: 48, color: AppColors.statusError),
-                  const SizedBox(height: 12),
-                  Text('Something went wrong', style: TextStyle(color: AppColors.textSecondary)),
-                  const SizedBox(height: 4),
-                  Text(snapshot.error.toString(), style: TextStyle(fontSize: 12, color: AppColors.textTertiary), textAlign: TextAlign.center),
-                ],
-              ),
-            ),
-          );
+          return ErrorRetry(message: 'Failed to load data', onRetry: () {});
         }
 
         if (snapshot.connectionState == ConnectionState.waiting) {
