@@ -297,8 +297,26 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
     final speech = stt.SpeechToText();
     bool isListening = false;
     String voiceTarget = ''; // 'title' or 'description'
+    // Noise-specific fields
+    TimeOfDay? noiseTime;
+    String noiseDuration = 'Less than 15 min';
+    String noiseSource = 'Unknown';
+    const noiseDurations = [
+      'Less than 15 min',
+      '15-30 min',
+      '30-60 min',
+      'More than 1 hour',
+    ];
+    const noiseSources = [
+      'Above',
+      'Below',
+      'Left',
+      'Right',
+      'Outside',
+      'Unknown',
+    ];
 
-    final categories = ['Plumbing', 'Electrical', 'Security', 'Parking', 'Noise', 'Cleanliness', 'Elevator', 'Other'];
+    final categories = ['Plumbing', 'Electrical', 'Security', 'Parking', 'Noise/Nuisance', 'Cleanliness', 'Elevator', 'Other'];
 
     showModalBottomSheet(
       context: context,
@@ -455,6 +473,55 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
                       ]))).toList(),
                     onChanged: (v) => setBS(() => priority = v!),
                   ),
+                  // Noise-specific fields
+                  if (category == 'Noise/Nuisance') ...[
+                    const SizedBox(height: 16),
+                    const Divider(),
+                    const SizedBox(height: 4),
+                    Row(children: [
+                      const Icon(Icons.volume_up, size: 16, color: Color(0xFF7C3AED)),
+                      const SizedBox(width: 6),
+                      const Text('Noise Details', style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF7C3AED), fontSize: 13)),
+                    ]),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      onPressed: () async {
+                        final picked = await showTimePicker(
+                          context: ctx,
+                          initialTime: TimeOfDay.now(),
+                        );
+                        if (picked != null) setBS(() => noiseTime = picked);
+                      },
+                      icon: const Icon(Icons.access_time, size: 16),
+                      label: Text(noiseTime != null
+                          ? 'Time: ${noiseTime!.format(ctx)}'
+                          : 'Set Time of Occurrence'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.primaryAmber,
+                        side: const BorderSide(color: AppColors.primaryAmber),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: noiseDuration,
+                      decoration: const InputDecoration(labelText: 'Duration'),
+                      items: noiseDurations
+                          .map((d) => DropdownMenuItem(value: d, child: Text(d)))
+                          .toList(),
+                      onChanged: (v) => setBS(() => noiseDuration = v!),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: noiseSource,
+                      decoration: const InputDecoration(labelText: 'Source Direction'),
+                      items: noiseSources
+                          .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                          .toList(),
+                      onChanged: (v) => setBS(() => noiseSource = v!),
+                    ),
+                    const SizedBox(height: 4),
+                    const Divider(),
+                  ],
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: () async {
@@ -492,15 +559,28 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
                             'complaints/${DateTime.now().millisecondsSinceEpoch}.jpg',
                           );
                         }
-                        await FirestoreService.addComplaint(Complaint(
-                          id: '',
-                          title: titleCtrl.text, description: descCtrl.text,
-                          category: category, status: ComplaintStatus.open, priority: priority,
-                          raisedBy: PrefsService.userName.isEmpty ? 'You' : PrefsService.userName,
-                          flat: PrefsService.userFlat.isEmpty ? 'A-101' : PrefsService.userFlat,
-                          date: DateTime.now(), hasPhoto: pickedImage != null,
-                          photoUrl: photoUrl,
-                        ));
+                        final Map<String, dynamic>? noiseExtra =
+                            category == 'Noise/Nuisance'
+                                ? {
+                                    'noiseTime': noiseTime != null
+                                        ? '${noiseTime!.hour}:${noiseTime!.minute.toString().padLeft(2, '0')}'
+                                        : null,
+                                    'noiseDuration': noiseDuration,
+                                    'noiseSource': noiseSource,
+                                  }
+                                : null;
+                        await FirestoreService.addComplaint(
+                          Complaint(
+                            id: '',
+                            title: titleCtrl.text, description: descCtrl.text,
+                            category: category, status: ComplaintStatus.open, priority: priority,
+                            raisedBy: PrefsService.userName.isEmpty ? 'You' : PrefsService.userName,
+                            flat: PrefsService.userFlat.isEmpty ? 'A-101' : PrefsService.userFlat,
+                            date: DateTime.now(), hasPhoto: pickedImage != null,
+                            photoUrl: photoUrl,
+                          ),
+                          extraFields: noiseExtra,
+                        );
                         AnalyticsService.logComplaintCreated(category);
                         KarmaService.addPoints(KarmaService.complaintFiled, 'Filed complaint');
                         if (!context.mounted) return;
