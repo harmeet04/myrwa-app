@@ -2,7 +2,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import '../utils/prefs_service.dart';
 
 class AuthService {
@@ -121,7 +120,6 @@ class AuthService {
     PrefsService.userId = user.uid;
     final blockedIds = List<String>.from(d['blockedUserIds'] ?? []);
     await PrefsService.setBlockedUserIds(blockedIds);
-    try { await FirebaseCrashlytics.instance.setUserIdentifier(user.uid); } catch (_) {}
     return true;
   }
 

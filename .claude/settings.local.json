@@ -14,7 +14,8 @@
       "Bash(python -m http.server 8080 --bind 0.0.0.0)",
       "Bash(python -c \"import sys,json; d=json.load\\(sys.stdin\\); [print\\(c['oauth_client']\\) for c in d.get\\('client',[]\\) if 'oauth_client' in c]\")",
       "Bash(taskkill //F //IM python.exe)",
-      "Bash(python -m http.server 8080 --bind 127.0.0.1)"
+      "Bash(python -m http.server 8080 --bind 127.0.0.1)",
+      "Bash(taskkill //F //IM chrome.exe)"
     ]
   }
 }

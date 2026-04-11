@@ -17,33 +17,38 @@ import 'utils/seed_data.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
 void main() async {
-  runZonedGuarded(() async {
-    WidgetsFlutterBinding.ensureInitialized();
-    await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-    await PrefsService.init();
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await PrefsService.init();
 
-    // Seed demo users (run once, then remove this line)
-    await SeedData.seedDemoUsers();
+  // Seed demo users (run once, errors silently if rules block it)
+  try { await SeedData.seedDemoUsers(); } catch (_) {}
 
-    // Global error handler
+  // Crashlytics only on mobile (not supported on web)
+  if (!kIsWeb) {
+    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterFatalError;
+    runZonedGuarded(() {
+      runApp(_buildApp());
+    }, (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    });
+  } else {
     FlutterError.onError = (details) {
       FlutterError.presentError(details);
-      try { FirebaseCrashlytics.instance.recordFlutterFatalError(details); } catch (_) {}
+      debugPrint('FlutterError: ${details.exceptionAsString()}');
     };
+    runApp(_buildApp());
+  }
+}
 
-    runApp(
-      MultiProvider(
-        providers: [
-          ChangeNotifierProvider(create: (_) => LocaleProvider()),
-          ChangeNotifierProvider(create: (_) => NotificationProvider()),
-        ],
-        child: const MyApp(),
-      ),
-    );
-  }, (error, stack) {
-    debugPrint('Uncaught error: $error');
-    try { FirebaseCrashlytics.instance.recordError(error, stack, fatal: true); } catch (_) {}
-  });
+Widget _buildApp() {
+  return MultiProvider(
+    providers: [
+      ChangeNotifierProvider(create: (_) => LocaleProvider()),
+      ChangeNotifierProvider(create: (_) => NotificationProvider()),
+    ],
+    child: const MyApp(),
+  );
 }
 
 class MyApp extends StatefulWidget {
