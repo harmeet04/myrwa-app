@@ -7,6 +7,7 @@ import '../chat/chat_list_screen.dart';
 import '../events/events_screen.dart';
 import '../polls/polls_screen.dart';
 import '../directory/directory_screen.dart';
+import '../community_board/community_board_screen.dart';
 
 class CommunityScreen extends StatelessWidget {
   const CommunityScreen({super.key});
@@ -19,6 +20,7 @@ class CommunityScreen extends StatelessWidget {
       _CommunityItem('📅', 'Events', 'Society events & RSVP', AppColors.purpleBg, AppColors.purpleBorder, const EventsScreen()),
       _CommunityItem('🗳️', 'Polls', 'Vote on society decisions', AppColors.blueBg, AppColors.blueBorder, const PollsScreen()),
       _CommunityItem('👥', 'Directory', 'Residents & contacts', AppColors.greenBg, AppColors.greenBorder, const DirectoryScreen()),
+      _CommunityItem('📋', 'Community Board', 'Skills, lending & carpooling', AppColors.greenBg, AppColors.greenBorder, const CommunityBoardScreen()),
     ];
 
     return Scaffold(

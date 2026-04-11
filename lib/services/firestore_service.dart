@@ -163,9 +163,10 @@ class FirestoreService {
     );
   }
 
-  static Future<bool> addComplaint(Complaint c) async {
+  static Future<bool> addComplaint(Complaint c,
+      {Map<String, dynamic>? extraFields}) async {
     try {
-      await _complaints.add({
+      final data = {
         'title': c.title,
         'description': c.description,
         'category': c.category,
@@ -178,7 +179,9 @@ class FirestoreService {
         'hasPhoto': c.hasPhoto,
         'society': PrefsService.societyName,
         'createdBy': AuthService.uid,
-      });
+        if (extraFields != null) ...extraFields,
+      };
+      await _complaints.add(data);
       return true;
     } catch (e) {
       debugPrint('Error adding complaint: $e');
@@ -603,6 +606,29 @@ class FirestoreService {
       debugPrint('Error sending SOS alert: $e');
       return false;
     }
+  }
+
+  // ──── COMMUNITY BOARD ────
+  static CollectionReference get _communityBoard =>
+      _db.collection('community_board');
+
+  static Stream<QuerySnapshot> communityBoardStream(
+      String society, String type) {
+    return _communityBoard
+        .where('society', isEqualTo: society)
+        .where('type', isEqualTo: type)
+        .orderBy('createdAt', descending: true)
+        .limit(30)
+        .snapshots();
+  }
+
+  static Future<void> addBoardPost(Map<String, dynamic> data) async {
+    data['society'] = PrefsService.societyName;
+    data['author'] = PrefsService.userName.isEmpty ? 'Resident' : PrefsService.userName;
+    data['flat'] = PrefsService.userFlat;
+    data['createdAt'] = FieldValue.serverTimestamp();
+    data['isActive'] = true;
+    await _communityBoard.add(data);
   }
 
   // ──── GENERIC COLLECTIONS (for screens with local mock data) ────
