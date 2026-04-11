@@ -6,6 +6,7 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_spacing.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/prefs_service.dart';
+import '../../widgets/voice_input_button.dart';
 
 class _ChatMessage {
   final String text;
@@ -414,6 +415,7 @@ Answer helpfully and concisely (2-3 sentences max). Be friendly, use casual Hind
               onSubmitted: _sendMessage,
             ),
           ),
+          VoiceInputButton(controller: _controller),
           const SizedBox(width: 4),
           Material(
             color: AppColors.primaryAmber,

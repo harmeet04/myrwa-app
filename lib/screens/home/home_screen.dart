@@ -12,6 +12,7 @@ import '../../services/firestore_service.dart';
 import '../../widgets/action_tile.dart';
 import '../../widgets/section_header.dart';
 import '../../widgets/warm_card.dart';
+import '../../widgets/voice_input_button.dart';
 import '../visitors/visitors_screen.dart';
 import '../packages/packages_screen.dart';
 import '../notices/notices_screen.dart';
@@ -38,6 +39,20 @@ class _HomeScreenState extends State<HomeScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
   bool _isSearching = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      final value = _searchController.text;
+      if (value != _searchQuery) {
+        setState(() {
+          _searchQuery = value;
+          _isSearching = value.isNotEmpty;
+        });
+      }
+    });
+  }
 
   @override
   void dispose() {
@@ -206,16 +221,21 @@ class _HomeScreenState extends State<HomeScreen> {
                       color: AppColors.textTertiary,
                       size: 20,
                     ),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
+                    suffixIcon: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (_searchQuery.isNotEmpty)
+                          IconButton(
                             icon: const Icon(
                               Icons.close,
                               color: AppColors.textTertiary,
                               size: 20,
                             ),
                             onPressed: _clearSearch,
-                          )
-                        : null,
+                          ),
+                        VoiceInputButton(controller: _searchController),
+                      ],
+                    ),
                     filled: true,
                     fillColor: AppColors.surfaceLight,
                     contentPadding: const EdgeInsets.symmetric(
