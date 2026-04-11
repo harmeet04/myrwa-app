@@ -21,8 +21,11 @@ void main() async {
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   await PrefsService.init();
 
-  // Seed demo users (run once, errors silently if rules block it)
-  try { await SeedData.seedDemoUsers(); } catch (_) {}
+  // Seed demo users and sync flags (run once, errors silently if rules block it)
+  try {
+    await SeedData.seedDemoUsers();
+    await SeedData.syncUsersFromPreRegistered();
+  } catch (_) {}
 
   // Crashlytics only on mobile (not supported on web)
   if (!kIsWeb) {
