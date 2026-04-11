@@ -9,7 +9,6 @@ import '../profile/profile_screen.dart';
 import '../gate_log/gate_log_screen.dart';
 import '../admin/admin_panel_screen.dart';
 import '../qr_pass/qr_pass_screen.dart';
-import '../vehicle/vehicle_screen.dart';
 import '../sos/sos_screen.dart';
 import '../vendor/vendor_screen.dart';
 import '../accounting/accounting_screen.dart';
@@ -105,16 +104,6 @@ class MoreScreen extends StatelessWidget {
             iconColor: AppColors.statusError,
             bgColor: AppColors.redBg,
             onTap: () => _push(context, const SosScreen()),
-          ),
-
-          _SectionHeader('Vehicle & Parking'),
-          _MoreTile(
-            icon: Icons.local_parking,
-            title: locale.get('vehicles'),
-            subtitle: locale.get('sub_vehicles'),
-            iconColor: const Color(0xFF3B82F6),
-            bgColor: AppColors.blueBg,
-            onTap: () => _push(context, const VehicleScreen()),
           ),
 
           _SectionHeader('Governance'),

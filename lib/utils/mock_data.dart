@@ -96,6 +96,35 @@ class MockData {
       author: 'Rajesh Sharma', authorFlat: 'A-101',
       date: DateTime(2026, 2, 8), isPinned: false, likes: 7, category: 'Financial Report',
     ),
+    Notice(
+      id: 'n_8',
+      title: 'Monthly Maintenance Due',
+      body: 'Dear residents, April 2026 monthly maintenance of ₹3,500 is due by April 10. Please pay via UPI or at the society office. Late fee of ₹200 applies after the due date.',
+      author: 'Rajesh Sharma', authorFlat: 'A-101',
+      date: DateTime(2026, 4, 1), isPinned: true, likes: 4, category: 'Financial',
+    ),
+    Notice(
+      id: 'n_9',
+      title: 'Water Tank Cleaning Schedule',
+      body: 'Overhead and underground water tanks will be cleaned on April 15, 2026. Water supply will be unavailable from 8 AM to 1 PM. Please store sufficient water in advance.',
+      author: 'Vikram Singh', authorFlat: 'A-301',
+      date: DateTime(2026, 4, 5), isPinned: false, likes: 6, category: 'Announcement',
+    ),
+    Notice(
+      id: 'n_10',
+      title: 'New Parking Rules',
+      body: 'Updated parking guidelines effective April 20, 2026: (1) Each flat gets one reserved spot. (2) Visitor parking limited to 4 hours. (3) Two-wheelers must park in designated zones only. (4) No parking in fire lane — violators will be fined ₹500.',
+      author: 'Rajesh Sharma', authorFlat: 'A-101',
+      date: DateTime(2026, 4, 8), isPinned: false, likes: 11, category: 'Rules',
+    ),
+    Notice(
+      id: 'n_11',
+      title: 'AGM Minutes - March 2026',
+      body: 'Minutes of the AGM held on March 30, 2026 are now available. Key decisions: annual budget approved at ₹18L, solar panel installation greenlit, new security agency shortlisted, garden renovation to begin in May.',
+      author: 'Rajesh Sharma', authorFlat: 'A-101',
+      date: DateTime(2026, 4, 2), isPinned: false, likes: 8, category: 'AGM Minutes',
+      attachmentName: 'AGM_Minutes_Mar2026.pdf',
+    ),
   ];
 
   static List<Complaint> get complaints => [
@@ -261,6 +290,13 @@ class MockData {
       description: 'Quarterly maintenance charges', flat: 'A-101'),
     Bill(id: 'b_5', title: 'Gas Pipeline - Feb', amount: 680, dueDate: DateTime(2026, 3, 1),
       category: 'Gas', status: BillStatus.overdue, description: 'Piped gas monthly charges', flat: 'A-101'),
+    Bill(id: 'b_11', title: 'Maintenance - April 2026', amount: 3500, dueDate: DateTime(2026, 4, 10),
+      category: 'Maintenance', status: BillStatus.pending, description: 'Monthly maintenance charges for April', flat: 'A-101'),
+    Bill(id: 'b_12', title: 'Electricity - March 2026', amount: 1200, dueDate: DateTime(2026, 3, 25),
+      category: 'Electricity', status: BillStatus.paid, paidDate: DateTime(2026, 3, 20),
+      description: 'Common area electricity charges for March', flat: 'A-101'),
+    Bill(id: 'b_13', title: 'Water Charges - Q1 2026', amount: 800, dueDate: DateTime(2026, 3, 31),
+      category: 'Water', status: BillStatus.overdue, description: 'Quarterly water supply charges Jan-Mar 2026', flat: 'A-101'),
   ];
 
   // Society-wide bills for admin view
