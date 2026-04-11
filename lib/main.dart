@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -11,6 +12,8 @@ import 'screens/splash/splash_screen.dart';
 import 'services/analytics_service.dart';
 import 'services/notification_provider.dart';
 import 'services/notification_service.dart';
+import 'utils/seed_data.dart';
+
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 
 void main() async {
@@ -19,10 +22,13 @@ void main() async {
     await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     await PrefsService.init();
 
+    // Seed demo users (run once, then remove this line)
+    await SeedData.seedDemoUsers();
+
     // Global error handler
     FlutterError.onError = (details) {
       FlutterError.presentError(details);
-      FirebaseCrashlytics.instance.recordFlutterFatalError(details);
+      try { FirebaseCrashlytics.instance.recordFlutterFatalError(details); } catch (_) {}
     };
 
     runApp(
@@ -35,7 +41,8 @@ void main() async {
       ),
     );
   }, (error, stack) {
-    FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    debugPrint('Uncaught error: $error');
+    try { FirebaseCrashlytics.instance.recordError(error, stack, fatal: true); } catch (_) {}
   });
 }
 
