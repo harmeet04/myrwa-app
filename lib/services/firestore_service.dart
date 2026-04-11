@@ -76,7 +76,6 @@ class FirestoreService {
   static Stream<QuerySnapshot> noticesStream(String society) {
     return _notices
         .where('society', isEqualTo: society)
-        .orderBy('date', descending: true)
         .limit(50)
         .snapshots();
   }
@@ -135,7 +134,6 @@ class FirestoreService {
   static Stream<QuerySnapshot> complaintsStream(String society) {
     return _complaints
         .where('society', isEqualTo: society)
-        .orderBy('date', descending: true)
         .limit(50)
         .snapshots();
   }
@@ -199,7 +197,6 @@ class FirestoreService {
   static Stream<QuerySnapshot> eventsStream(String society) {
     return _events
         .where('society', isEqualTo: society)
-        .orderBy('date', descending: false)
         .limit(30)
         .snapshots();
   }
@@ -254,7 +251,6 @@ class FirestoreService {
   static Stream<QuerySnapshot> pollsStream(String society) {
     return _polls
         .where('society', isEqualTo: society)
-        .orderBy('endDate', descending: true)
         .limit(20)
         .snapshots();
   }
@@ -309,7 +305,6 @@ class FirestoreService {
   static Stream<QuerySnapshot> visitorsStream(String society) {
     return _visitors
         .where('society', isEqualTo: society)
-        .orderBy('date', descending: true)
         .limit(50)
         .snapshots();
   }
@@ -372,7 +367,6 @@ class FirestoreService {
   static Stream<QuerySnapshot> gateLogStream(String society) {
     return _gateLog
         .where('society', isEqualTo: society)
-        .orderBy('timeIn', descending: true)
         .limit(100)
         .snapshots();
   }
@@ -412,7 +406,7 @@ class FirestoreService {
   static Stream<QuerySnapshot> billsStream(String society, {String? flat}) {
     Query q = _bills.where('society', isEqualTo: society);
     if (flat != null) q = q.where('flat', isEqualTo: flat);
-    return q.orderBy('dueDate', descending: true).limit(50).snapshots();
+    return q.limit(50).snapshots();
   }
 
   static Bill billFromDoc(DocumentSnapshot doc) {
@@ -457,7 +451,6 @@ class FirestoreService {
   static Stream<QuerySnapshot> marketplaceStream(String society) {
     return _marketplace
         .where('society', isEqualTo: society)
-        .orderBy('date', descending: true)
         .limit(50)
         .snapshots();
   }
@@ -504,7 +497,6 @@ class FirestoreService {
   static Stream<QuerySnapshot> servicesStream(String society) {
     return _services
         .where('society', isEqualTo: society)
-        .orderBy('shopName')
         .limit(30)
         .snapshots();
   }
@@ -528,7 +520,6 @@ class FirestoreService {
   static Stream<QuerySnapshot> chatRoomsStream(String userId) {
     return _chatRooms
         .where('participants', arrayContains: userId)
-        .orderBy('lastTime', descending: true)
         .snapshots();
   }
 
@@ -536,7 +527,6 @@ class FirestoreService {
     return _chatRooms
         .doc(roomId)
         .collection('messages')
-        .orderBy('time', descending: false)
         .snapshots();
   }
 
@@ -585,7 +575,6 @@ class FirestoreService {
   static Stream<QuerySnapshot> sosAlertsStream(String society) {
     return _sosAlerts
         .where('society', isEqualTo: society)
-        .orderBy('time', descending: true)
         .limit(20)
         .snapshots();
   }
@@ -617,7 +606,6 @@ class FirestoreService {
     return _communityBoard
         .where('society', isEqualTo: society)
         .where('type', isEqualTo: type)
-        .orderBy('createdAt', descending: true)
         .limit(30)
         .snapshots();
   }
@@ -671,7 +659,6 @@ class FirestoreService {
   static Stream<QuerySnapshot> collectionStream(String collectionName, String society) {
     return _db.collection(collectionName)
         .where('society', isEqualTo: society)
-        .orderBy('createdAt', descending: true)
         .snapshots();
   }
 }
