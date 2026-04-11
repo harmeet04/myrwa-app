@@ -163,41 +163,127 @@ class _VisitorsScreenState extends State<VisitorsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(AppSpacing.radiusModal)),
       ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.fromLTRB(
-          AppSpacing.xl,
-          AppSpacing.xl,
-          AppSpacing.xl,
-          MediaQuery.of(ctx).viewInsets.bottom + AppSpacing.xl,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Handle
-            Center(
-              child: Container(
-                width: 36,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: AppSpacing.lg),
-                decoration: BoxDecoration(
-                  color: AppColors.textTertiary,
-                  borderRadius: BorderRadius.circular(2),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setSheetState) {
+          bool isRecurring = false;
+          final List<bool> selectedDays = List.filled(7, false); // Mon–Sun
+
+          // We need a second StatefulBuilder layer to allow day toggles to update
+          return StatefulBuilder(
+            builder: (ctx2, setInnerState) {
+              const dayLabels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+              return Padding(
+                padding: EdgeInsets.fromLTRB(
+                  AppSpacing.xl,
+                  AppSpacing.xl,
+                  AppSpacing.xl,
+                  MediaQuery.of(ctx2).viewInsets.bottom + AppSpacing.xl,
                 ),
-              ),
-            ),
-            const Text(
-              'Pre-approve Visitor',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-            ),
-            const SizedBox(height: AppSpacing.lg),
-            _buildField(nameCtrl, 'Visitor Name', Icons.person_outline),
-            const SizedBox(height: AppSpacing.md),
-            _buildField(purposeCtrl, 'Purpose (e.g. Guest, Delivery)', Icons.info_outline),
-            const SizedBox(height: AppSpacing.xl),
-            _buildSubmitButton(ctx, nameCtrl, purposeCtrl),
-          ],
-        ),
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      // Handle
+                      Center(
+                        child: Container(
+                          width: 36,
+                          height: 4,
+                          margin: const EdgeInsets.only(bottom: AppSpacing.lg),
+                          decoration: BoxDecoration(
+                            color: AppColors.textTertiary,
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                      ),
+                      const Text(
+                        'Pre-approve Visitor',
+                        style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                      ),
+                      const SizedBox(height: AppSpacing.lg),
+                      _buildField(nameCtrl, 'Visitor Name', Icons.person_outline),
+                      const SizedBox(height: AppSpacing.md),
+                      _buildField(purposeCtrl, 'Purpose (e.g. Guest, Delivery)', Icons.info_outline),
+                      const SizedBox(height: AppSpacing.md),
+
+                      // Recurring pass toggle
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+                        decoration: BoxDecoration(
+                          color: AppColors.amberBg,
+                          borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+                          border: Border.all(color: AppColors.amberBorder),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.repeat, size: 18, color: AppColors.textSecondary),
+                            const SizedBox(width: AppSpacing.sm),
+                            const Expanded(
+                              child: Text(
+                                'Make this a recurring pass',
+                                style: TextStyle(fontSize: 13, color: AppColors.textPrimary, fontWeight: FontWeight.w500),
+                              ),
+                            ),
+                            Switch(
+                              value: isRecurring,
+                              activeThumbColor: AppColors.primaryAmber,
+                              activeTrackColor: AppColors.amberBorder,
+                              onChanged: (v) => setInnerState(() => isRecurring = v),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Day checkboxes (shown only when recurring is on)
+                      if (isRecurring) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        Container(
+                          padding: const EdgeInsets.all(AppSpacing.md),
+                          decoration: BoxDecoration(
+                            color: AppColors.greenBg,
+                            borderRadius: BorderRadius.circular(AppSpacing.radiusCard),
+                            border: Border.all(color: AppColors.greenBorder),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Allowed days',
+                                style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                              ),
+                              const SizedBox(height: AppSpacing.sm),
+                              Wrap(
+                                spacing: AppSpacing.sm,
+                                runSpacing: AppSpacing.xs,
+                                children: List.generate(7, (i) {
+                                  return FilterChip(
+                                    label: Text(dayLabels[i], style: const TextStyle(fontSize: 12)),
+                                    selected: selectedDays[i],
+                                    selectedColor: AppColors.primaryAmber.withValues(alpha: 0.2),
+                                    checkmarkColor: AppColors.primaryAmber,
+                                    side: BorderSide(
+                                      color: selectedDays[i] ? AppColors.primaryAmber : AppColors.cardBorder,
+                                    ),
+                                    onSelected: (v) => setInnerState(() => selectedDays[i] = v),
+                                  );
+                                }),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: AppSpacing.xl),
+                      _buildSubmitButton(ctx2, nameCtrl, purposeCtrl,
+                          isRecurring: isRecurring, selectedDays: selectedDays),
+                    ],
+                  ),
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
@@ -226,7 +312,13 @@ class _VisitorsScreenState extends State<VisitorsScreen> {
     );
   }
 
-  Widget _buildSubmitButton(BuildContext ctx, TextEditingController nameCtrl, TextEditingController purposeCtrl) {
+  Widget _buildSubmitButton(
+    BuildContext ctx,
+    TextEditingController nameCtrl,
+    TextEditingController purposeCtrl, {
+    bool isRecurring = false,
+    List<bool>? selectedDays,
+  }) {
     return Container(
       decoration: BoxDecoration(
         gradient: AppColors.primaryGradient,
@@ -250,9 +342,24 @@ class _VisitorsScreenState extends State<VisitorsScreen> {
                 otp: otp,
                 status: VisitorStatus.approved,
               );
+              // Build recurring day indices (1 = Mon … 7 = Sun)
+              final recurringDays = isRecurring && selectedDays != null
+                  ? [
+                      for (int i = 0; i < selectedDays.length; i++)
+                        if (selectedDays[i]) i + 1,
+                    ]
+                  : <int>[];
+
               FirestoreService.addVisitor(visitor);
+              if (isRecurring) {
+                FirestoreService.updateVisitor(
+                  visitor.id,
+                  {'isRecurring': true, 'recurringDays': recurringDays},
+                );
+              }
               Navigator.pop(ctx);
-              showSnack(context, 'Visitor pre-approved! OTP: $otp');
+              final label = isRecurring ? 'Recurring pass created! OTP: $otp' : 'Visitor pre-approved! OTP: $otp';
+              showSnack(context, label);
             }
           },
           borderRadius: BorderRadius.circular(AppSpacing.radiusButton),
@@ -401,6 +508,32 @@ class _VisitorCard extends StatelessWidget {
               ),
             ],
           ),
+
+          // Trusted visitor badge for pending delivery agents
+          if (isPending && visitor.purpose.toLowerCase().contains('delivery'))
+            FutureBuilder<bool>(
+              future: FirestoreService.isTrustedVisitor(visitor.name, visitor.flat),
+              builder: (context, snap) {
+                if (snap.data == true) {
+                  return Padding(
+                    padding: const EdgeInsets.only(top: AppSpacing.sm),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.greenBg,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: AppColors.greenBorder),
+                      ),
+                      child: const Text(
+                        '\uD83D\uDFE2 Trusted Visitor (3+ visits)',
+                        style: TextStyle(fontSize: 10, color: AppColors.statusSuccess),
+                      ),
+                    ),
+                  );
+                }
+                return const SizedBox.shrink();
+              },
+            ),
 
           // Approve / Reject row for pending visitors
           if (isPending) ...[

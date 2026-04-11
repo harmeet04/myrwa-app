@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:add_2_calendar/add_2_calendar.dart' as add_2_calendar;
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
 import '../../models/models.dart';
@@ -128,6 +129,19 @@ class _EventsScreenState extends State<EventsScreen> {
                                 },
                                 child: const Text('Cancel RSVP'),
                               ),
+                              if (e.hasRsvpd) ...[
+                                const SizedBox(width: 8),
+                                OutlinedButton.icon(
+                                  onPressed: () => _addToCalendar(e),
+                                  icon: const Icon(Icons.calendar_month, size: 16),
+                                  label: const Text('Add to Calendar', style: TextStyle(fontSize: 12)),
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: AppColors.primaryAmber,
+                                    side: const BorderSide(color: AppColors.amberBorder),
+                                    visualDensity: VisualDensity.compact,
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
@@ -141,6 +155,17 @@ class _EventsScreenState extends State<EventsScreen> {
         },
       ),
     );
+  }
+
+  void _addToCalendar(Event e) {
+    final event = add_2_calendar.Event(
+      title: e.title,
+      description: e.description,
+      location: e.location,
+      startDate: e.date,
+      endDate: e.date.add(const Duration(hours: 2)),
+    );
+    add_2_calendar.Add2Calendar.addEvent2Cal(event);
   }
 
   void _showDetail(BuildContext context, Event e) {
@@ -192,6 +217,17 @@ class _EventsScreenState extends State<EventsScreen> {
                     },
                   ),
                 ]),
+                const SizedBox(height: 8),
+                OutlinedButton.icon(
+                  onPressed: () => _addToCalendar(e),
+                  icon: const Icon(Icons.calendar_month, size: 16),
+                  label: const Text('Add to Calendar', style: TextStyle(fontSize: 12)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryAmber,
+                    side: const BorderSide(color: AppColors.amberBorder),
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
               ],
               // Attendee list
               const SizedBox(height: 16),

@@ -350,6 +350,19 @@ class FirestoreService {
     await _visitors.doc(id).update(data);
   }
 
+  static Future<int> getVisitorFrequency(String visitorName, String flat) async {
+    final snap = await _visitors
+        .where('name', isEqualTo: visitorName)
+        .where('flat', isEqualTo: flat)
+        .get();
+    return snap.docs.length;
+  }
+
+  static Future<bool> isTrustedVisitor(String visitorName, String flat) async {
+    final count = await getVisitorFrequency(visitorName, flat);
+    return count >= 3;
+  }
+
   // ──── GATE LOG ────
   static CollectionReference get _gateLog => _db.collection('gate_log');
 

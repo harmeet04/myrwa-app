@@ -272,6 +272,31 @@ class _BillCard extends StatelessWidget {
               ],
             ),
 
+            // Smart reminder tip for pending bills not yet overdue
+            if (!isPaid && daysUntilDue > 7) ...[
+              const SizedBox(height: 10),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: AppColors.blueBg,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppColors.blueBorder),
+                ),
+                child: Row(
+                  children: [
+                    const Text('\uD83D\uDCA1', style: TextStyle(fontSize: 13)),
+                    const SizedBox(width: 6),
+                    const Expanded(
+                      child: Text(
+                        'Tip: You usually pay around the 5th. Set a reminder?',
+                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+
             // Due-soon warning chip
             if (isDueSoon) ...[
               const SizedBox(height: 10),
