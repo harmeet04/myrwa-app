@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 import '../../utils/helpers.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
@@ -97,7 +98,14 @@ class _QrPassScreenState extends State<QrPassScreen> {
             Container(
               width: 200, height: 200,
               decoration: BoxDecoration(border: Border.all(color: Colors.black, width: 2), borderRadius: BorderRadius.circular(8)),
-              child: CustomPaint(painter: _QrPainter(code), size: const Size(200, 200)),
+              child: QrImageView(
+                data: 'myrwa://pass/$code/$visitorName',
+                version: QrVersions.auto,
+                size: 200,
+                backgroundColor: Colors.white,
+                eyeStyle: const QrEyeStyle(eyeShape: QrEyeShape.square, color: AppColors.textPrimary),
+                dataModuleStyle: const QrDataModuleStyle(dataModuleShape: QrDataModuleShape.square, color: AppColors.textPrimary),
+              ),
             ),
             const SizedBox(height: 12),
             Text(code, style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, letterSpacing: 4)),
@@ -180,35 +188,3 @@ class _QrPassScreenState extends State<QrPassScreen> {
   }
 }
 
-class _QrPainter extends CustomPainter {
-  final String code;
-  _QrPainter(this.code);
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = Colors.black;
-    final rng = Random(code.hashCode);
-    final cellSize = size.width / 21;
-    _drawFinderPattern(canvas, paint, 0, 0, cellSize);
-    _drawFinderPattern(canvas, paint, size.width - 7 * cellSize, 0, cellSize);
-    _drawFinderPattern(canvas, paint, 0, size.height - 7 * cellSize, cellSize);
-    for (int r = 0; r < 21; r++) {
-      for (int c = 0; c < 21; c++) {
-        if (_isFinderArea(r, c)) continue;
-        if (rng.nextBool()) canvas.drawRect(Rect.fromLTWH(c * cellSize, r * cellSize, cellSize, cellSize), paint);
-      }
-    }
-  }
-
-  bool _isFinderArea(int r, int c) => (r < 8 && c < 8) || (r < 8 && c > 12) || (r > 12 && c < 8);
-
-  void _drawFinderPattern(Canvas canvas, Paint paint, double x, double y, double cell) {
-    canvas.drawRect(Rect.fromLTWH(x, y, 7 * cell, 7 * cell), paint);
-    final white = Paint()..color = Colors.white;
-    canvas.drawRect(Rect.fromLTWH(x + cell, y + cell, 5 * cell, 5 * cell), white);
-    canvas.drawRect(Rect.fromLTWH(x + 2 * cell, y + 2 * cell, 3 * cell, 3 * cell), paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
