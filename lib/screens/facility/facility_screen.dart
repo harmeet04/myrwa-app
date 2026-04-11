@@ -170,10 +170,110 @@ class _FacilityScreenState extends State<FacilityScreen> {
     );
   }
 
+  void _showMyBookings(BuildContext context) {
+    final society = PrefsService.societyName;
+    final userName = PrefsService.userName;
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) => DraggableScrollableSheet(
+        initialChildSize: 0.7,
+        maxChildSize: 0.9,
+        minChildSize: 0.4,
+        expand: false,
+        builder: (_, scrollCtrl) => Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(children: [
+                const Text('My Bookings', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Spacer(),
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Close')),
+              ]),
+            ),
+            const Divider(height: 1),
+            Expanded(
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirestoreService.collection('facility_bookings')
+                    .where('society', isEqualTo: society)
+                    .where('bookedBy', isEqualTo: userName)
+                    .limit(20)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+                  final docs = snapshot.data?.docs ?? [];
+                  if (docs.isEmpty) {
+                    return const Center(child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('📅', style: TextStyle(fontSize: 48)),
+                        SizedBox(height: 8),
+                        Text('No bookings yet', style: TextStyle(color: AppColors.textSecondary)),
+                      ],
+                    ));
+                  }
+                  return ListView.builder(
+                    controller: scrollCtrl,
+                    padding: const EdgeInsets.all(16),
+                    itemCount: docs.length,
+                    itemBuilder: (_, i) {
+                      final d = docs[i].data() as Map<String, dynamic>;
+                      final date = (d['date'] as Timestamp?)?.toDate() ?? DateTime.now();
+                      final isPast = date.isBefore(DateTime.now().subtract(const Duration(days: 1)));
+                      return Card(
+                        child: ListTile(
+                          leading: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: isPast ? AppColors.cardBorder : AppColors.amberBg,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(Icons.event_available, color: isPast ? AppColors.textTertiary : AppColors.primaryAmber),
+                          ),
+                          title: Text(
+                            (d['facilityName'] as String?)?.split('/').first.trim() ?? 'Unknown',
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          subtitle: Text('${formatDate(date)} • ${d['slot'] ?? '-'}'),
+                          trailing: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: isPast ? AppColors.cardBorder : AppColors.greenBg,
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              isPast ? 'Past' : 'Upcoming',
+                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: isPast ? AppColors.textTertiary : AppColors.statusSuccess),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Facility Booking / सुविधा बुकिंग')),
+      appBar: AppBar(
+        title: const Text('Facility Booking / सुविधा बुकिंग'),
+        actions: [
+          TextButton.icon(
+            onPressed: () => _showMyBookings(context),
+            icon: const Icon(Icons.bookmark, size: 18),
+            label: const Text('My Bookings', style: TextStyle(fontSize: 12)),
+          ),
+        ],
+      ),
       floatingActionButton: PrefsService.isAdmin
           ? FloatingActionButton.extended(
               onPressed: _showAddFacilityForm,
@@ -235,7 +335,7 @@ class _FacilityScreenState extends State<FacilityScreen> {
               itemCount: _facilities.length,
               itemBuilder: (context, i) {
                 final f = _facilities[i];
-                final booked = _bookedSlots[f.name] ?? (f.isPerDay ? {} : {'10:00-11:00', '14:00-15:00'});
+                final booked = _bookedSlots[f.name] ?? <String>{};
                 return Card(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -346,6 +446,7 @@ class _FacilityScreenState extends State<FacilityScreen> {
               });
               if (!ctx.mounted) return;
               Navigator.pop(ctx);
+              _loadBookings(); // refresh booked slots
               showSnack(ctx, '✅ ${f.name.split("/")[0].trim()} booked for $slot!');
             },
             child: const Text('Confirm / पक्का'),
