@@ -170,7 +170,10 @@ class _NoticesScreenState extends State<NoticesScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _NoticeDetailSheet(notice: n),
+      builder: (_) => _NoticeDetailSheet(
+        notice: n,
+        onCommentTap: () => _showComments(context, n),
+      ),
     );
   }
 
@@ -719,39 +722,29 @@ class _NoticeCard extends StatelessWidget {
                     fontSize: 12, color: AppColors.textSecondary),
               ),
               const SizedBox(height: AppSpacing.sm),
-              // Bottom row: likes + comments
+              // Bottom row: comments
               Row(
                 children: [
-                  InkWell(
-                    onTap: () => FirestoreService.updateNotice(
-                        notice.id, {'likes': notice.likes + 1}),
-                    borderRadius: BorderRadius.circular(4),
-                    child: Row(
-                      children: [
-                        const Text('❤️', style: TextStyle(fontSize: 13)),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${notice.likes}',
-                          style: const TextStyle(
-                              fontSize: 11,
-                              color: AppColors.textTertiary),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
                   GestureDetector(
                     onTap: onCommentTap,
-                    child: Row(
-                      children: [
-                        const Text('💬', style: TextStyle(fontSize: 13)),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${notice.comments.length}',
-                          style: const TextStyle(
-                              fontSize: 11, color: AppColors.textTertiary),
-                        ),
-                      ],
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: AppColors.amberBg,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.amberBorder),
+                      ),
+                      child: Row(
+                        children: [
+                          const Text('💬', style: TextStyle(fontSize: 13)),
+                          const SizedBox(width: 6),
+                          Text(
+                            notice.comments.isEmpty ? 'Comment' : '${notice.comments.length} comments',
+                            style: const TextStyle(
+                                fontSize: 11, fontWeight: FontWeight.w600, color: AppColors.textOnPrimary),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const Spacer(),
@@ -807,7 +800,8 @@ class _NoticeCard extends StatelessWidget {
 
 class _NoticeDetailSheet extends StatelessWidget {
   final Notice notice;
-  const _NoticeDetailSheet({required this.notice});
+  final VoidCallback? onCommentTap;
+  const _NoticeDetailSheet({required this.notice, this.onCommentTap});
 
   @override
   Widget build(BuildContext context) {
@@ -931,15 +925,30 @@ class _NoticeDetailSheet extends StatelessWidget {
             ],
             const SizedBox(height: AppSpacing.xl),
             Row(children: [
-              const Text('❤️', style: TextStyle(fontSize: 16)),
-              const SizedBox(width: 4),
-              Text('${notice.likes} likes',
-                  style: const TextStyle(color: AppColors.textSecondary)),
-              const SizedBox(width: AppSpacing.lg),
-              const Text('💬', style: TextStyle(fontSize: 16)),
-              const SizedBox(width: 4),
-              Text('${notice.comments.length} comments',
-                  style: const TextStyle(color: AppColors.textSecondary)),
+              GestureDetector(
+                onTap: () {
+                  Navigator.pop(context);
+                  onCommentTap?.call();
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppColors.amberBg,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.amberBorder),
+                  ),
+                  child: Row(
+                    children: [
+                      const Text('💬', style: TextStyle(fontSize: 14)),
+                      const SizedBox(width: 6),
+                      Text(
+                        notice.comments.isEmpty ? 'Write a comment' : '${notice.comments.length} comments',
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textOnPrimary),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
               const Spacer(),
               IconButton(
                 icon: const Icon(Icons.share,
