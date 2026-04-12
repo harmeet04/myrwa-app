@@ -72,21 +72,26 @@ class _MyAppState extends State<MyApp> {
     _isDark = PrefsService.isDarkMode;
     _textScale = PrefsService.textScaleFactor;
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      NotificationService.setupInteractiveMessage(navigatorKey);
+      try {
+        NotificationService.setupInteractiveMessage(navigatorKey);
+      } catch (e) {
+        debugPrint('Notification setup error: $e');
+      }
     });
     ErrorWidget.builder = (FlutterErrorDetails details) {
       return Material(
+        color: AppColors.scaffoldLight,
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(32),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.error_outline, size: 48, color: AppColors.statusError),
+                Icon(Icons.refresh, size: 48, color: AppColors.primaryAmber),
                 const SizedBox(height: 16),
-                const Text('Something went wrong', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Text('Something went wrong', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, decoration: TextDecoration.none, color: AppColors.textPrimary)),
                 const SizedBox(height: 8),
-                Text(details.exceptionAsString(), style: TextStyle(fontSize: 12, color: AppColors.textSecondary), textAlign: TextAlign.center),
+                const Text('Please restart the app', style: TextStyle(fontSize: 14, color: AppColors.textSecondary, decoration: TextDecoration.none)),
               ],
             ),
           ),

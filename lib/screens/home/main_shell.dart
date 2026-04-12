@@ -24,12 +24,16 @@ class _MainShellState extends State<MainShell> {
   @override
   void initState() {
     super.initState();
-    final notifProvider = context.read<NotificationProvider>();
-    notifProvider.init();
-    NotificationService.onForegroundMessage = (message) {
-      final body = message.notification?.body ?? 'New notification';
-      notifProvider.onNewMessage(body);
-    };
+    try {
+      final notifProvider = context.read<NotificationProvider>();
+      notifProvider.init();
+      NotificationService.onForegroundMessage = (message) {
+        final body = message.notification?.body ?? 'New notification';
+        notifProvider.onNewMessage(body);
+      };
+    } catch (e) {
+      debugPrint('MainShell initState error: $e');
+    }
   }
 
   @override

@@ -17,42 +17,43 @@ class NotificationService {
   }
 
   static Future<void> init() async {
-    // Request permission
-    final settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    try {
+      final settings = await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized ||
-        settings.authorizationStatus == AuthorizationStatus.provisional) {
-      // Get and store FCM token
-      final token = await _messaging.getToken();
-      if (token != null && AuthService.uid.isNotEmpty) {
-        await _saveFcmToken(token);
+      if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional) {
+        final token = await _messaging.getToken();
+        if (token != null && AuthService.uid.isNotEmpty) {
+          await _saveFcmToken(token);
+        }
+        await subscribeToTopics();
+        _messaging.onTokenRefresh.listen(_saveFcmToken);
       }
 
-      // Subscribe to relevant topics
-      await subscribeToTopics();
-
-      // Listen for token refresh
-      _messaging.onTokenRefresh.listen(_saveFcmToken);
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        _onForegroundMessage?.call(message);
+      });
+    } catch (e) {
+      debugPrint('NotificationService.init error: $e');
     }
-
-    // Handle foreground messages
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      _onForegroundMessage?.call(message);
-    });
   }
 
   static Future<void> subscribeToTopics() async {
-    final society = PrefsService.societyName.replaceAll(' ', '_').toLowerCase();
-    if (society.isNotEmpty) {
-      await _messaging.subscribeToTopic('society_$society');
-    }
-    final flat = PrefsService.userFlat.replaceAll(' ', '_').toLowerCase();
-    if (flat.isNotEmpty) {
-      await _messaging.subscribeToTopic('flat_${society}_$flat');
+    try {
+      final society = PrefsService.societyName.replaceAll(' ', '_').toLowerCase();
+      if (society.isNotEmpty) {
+        await _messaging.subscribeToTopic('society_$society');
+      }
+      final flat = PrefsService.userFlat.replaceAll(' ', '_').toLowerCase();
+      if (flat.isNotEmpty) {
+        await _messaging.subscribeToTopic('flat_${society}_$flat');
+      }
+    } catch (e) {
+      debugPrint('NotificationService.subscribeToTopics error: $e');
     }
   }
 
@@ -70,16 +71,17 @@ class NotificationService {
   /// Call after the MaterialApp is built so the navigator is ready.
   static Future<void> setupInteractiveMessage(
       GlobalKey<NavigatorState> navigatorKey) async {
-    // App opened from terminated state via notification tap
-    final RemoteMessage? initialMessage = await _messaging.getInitialMessage();
-    if (initialMessage != null) {
-      _handleMessageTap(initialMessage, navigatorKey);
+    try {
+      final RemoteMessage? initialMessage = await _messaging.getInitialMessage();
+      if (initialMessage != null) {
+        _handleMessageTap(initialMessage, navigatorKey);
+      }
+      FirebaseMessaging.onMessageOpenedApp.listen((message) {
+        _handleMessageTap(message, navigatorKey);
+      });
+    } catch (e) {
+      debugPrint('NotificationService.setupInteractiveMessage error: $e');
     }
-
-    // App was in background and notification was tapped
-    FirebaseMessaging.onMessageOpenedApp.listen((message) {
-      _handleMessageTap(message, navigatorKey);
-    });
   }
 
   static void _handleMessageTap(
