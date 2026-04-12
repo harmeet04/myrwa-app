@@ -260,14 +260,14 @@ class _FacilityScreenState extends State<FacilityScreen> {
                                     onPressed: () async {
                                       final confirm = await showDialog<bool>(
                                         context: ctx,
-                                        builder: (_) => AlertDialog(
+                                        builder: (dialogCtx) => AlertDialog(
                                           title: const Text('Cancel Booking'),
                                           content: const Text('Are you sure you want to cancel this booking?'),
                                           actions: [
-                                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
+                                            TextButton(onPressed: () => Navigator.pop(dialogCtx, false), child: const Text('No')),
                                             FilledButton(
                                               style: FilledButton.styleFrom(backgroundColor: AppColors.statusError),
-                                              onPressed: () => Navigator.pop(ctx, true),
+                                              onPressed: () => Navigator.pop(dialogCtx, true),
                                               child: const Text('Cancel Booking'),
                                             ),
                                           ],
@@ -275,6 +275,7 @@ class _FacilityScreenState extends State<FacilityScreen> {
                                       );
                                       if (confirm == true) {
                                         await FirestoreService.deleteDoc('facility_bookings', docs[i].id);
+                                        _loadBookings();
                                         if (ctx.mounted) showSnack(ctx, 'Booking cancelled');
                                       }
                                     },

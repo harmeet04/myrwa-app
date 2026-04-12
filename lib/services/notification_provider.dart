@@ -53,4 +53,11 @@ class NotificationProvider extends ChangeNotifier {
     if (_pendingComplaints > 0) _pendingComplaints--;
     notifyListeners();
   }
+
+  void clearBadge() {
+    _pendingVisitors = 0;
+    _pendingComplaints = 0;
+    _unreadNotices = 0;
+    notifyListeners();
+  }
 }

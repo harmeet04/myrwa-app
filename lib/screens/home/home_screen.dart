@@ -195,7 +195,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 userName: userName,
                 societyName: societyName,
                 flat: userFlat,
-                onBellTap: () => _showNotifications(context),
+                onBellTap: () {
+                  context.read<NotificationProvider>().clearBadge();
+                  _showNotifications(context);
+                },
               ),
             ),
 

@@ -114,6 +114,7 @@ class MarketItem {
   bool isSold;
   bool hasPhoto;
   String? photoUrl;
+  List<String> photoUrls;
 
   MarketItem({
     required this.id,
@@ -127,7 +128,17 @@ class MarketItem {
     this.isSold = false,
     this.hasPhoto = false,
     this.photoUrl,
-  });
+    List<String>? photoUrls,
+  }) : photoUrls = photoUrls ?? [];
+
+  /// Returns all available photo URLs (photoUrls list + legacy photoUrl).
+  List<String> get allPhotoUrls {
+    final urls = <String>[...photoUrls];
+    if (photoUrl != null && photoUrl!.isNotEmpty && !urls.contains(photoUrl)) {
+      urls.insert(0, photoUrl!);
+    }
+    return urls;
+  }
 }
 
 class ServiceItem {

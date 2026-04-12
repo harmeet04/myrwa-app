@@ -305,6 +305,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
 
   void _showItemDetail(BuildContext context, MarketItem item) {
     final condition = _conditionFor(item);
+    final allPhotos = item.allPhotoUrls;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -317,22 +318,43 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
           children: [
             Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.cardBorder, borderRadius: BorderRadius.circular(2)))),
             const SizedBox(height: 16),
-            // Image placeholder
-            Container(
-              height: 160, width: double.infinity,
-              decoration: BoxDecoration(
-                color: _itemCategoryColor(item.category).withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
+            // Image area - PageView for multiple photos or placeholder
+            if (allPhotos.isNotEmpty)
+              SizedBox(
+                height: 180,
+                child: PageView.builder(
+                  itemCount: allPhotos.length,
+                  itemBuilder: (_, i) => ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.network(
+                      allPhotos[i],
+                      height: 180,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, e, st) => Container(
+                        decoration: BoxDecoration(
+                          color: _itemCategoryColor(item.category).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Center(child: Icon(_itemCategoryIcon(item.category), size: 56, color: _itemCategoryColor(item.category).withValues(alpha: 0.5))),
+                      ),
+                    ),
+                  ),
+                ),
+              )
+            else
+              Container(
+                height: 160, width: double.infinity,
+                decoration: BoxDecoration(
+                  color: _itemCategoryColor(item.category).withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Center(child: Icon(_itemCategoryIcon(item.category), size: 56, color: _itemCategoryColor(item.category).withValues(alpha: 0.5))),
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(_itemCategoryIcon(item.category), size: 56, color: _itemCategoryColor(item.category).withValues(alpha: 0.5)),
-                  const SizedBox(height: 4),
-                  if (item.hasPhoto) Text('Photo', style: TextStyle(color: AppColors.textTertiary, fontSize: 12)),
-                ],
-              ),
-            ),
+            if (allPhotos.length > 1) ...[
+              const SizedBox(height: 6),
+              Center(child: Text('Swipe for more photos (${allPhotos.length})', style: TextStyle(fontSize: 11, color: AppColors.textTertiary))),
+            ],
             const SizedBox(height: 16),
             Row(children: [
               Expanded(child: Text(item.title, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold))),
@@ -357,29 +379,18 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
               ]),
             ]),
             const SizedBox(height: 20),
-            if (!item.isSold) Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => showSnack(context, 'Negotiate request sent!'),
-                    icon: const Icon(Icons.handshake, size: 18),
-                    label: const Text('Negotiate'),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: () {
-                      Navigator.pop(context);
-                      Navigator.of(context).push(MaterialPageRoute(
-                        builder: (_) => ChatScreen(otherName: item.seller, otherFlat: item.sellerFlat, otherId: 'seller_${item.id}'),
-                      ));
-                    },
-                    icon: const Icon(Icons.chat, size: 18),
-                    label: const Text('Chat with Seller'),
-                  ),
-                ),
-              ],
+            if (!item.isSold) SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (_) => ChatScreen(otherName: item.seller, otherFlat: item.sellerFlat, otherId: 'seller_${item.id}'),
+                  ));
+                },
+                icon: const Icon(Icons.chat, size: 18),
+                label: const Text('Chat with Seller'),
+              ),
             ),
             if (item.isSold) Container(
               width: double.infinity,
@@ -398,7 +409,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
     final titleCtrl = TextEditingController();
     final descCtrl = TextEditingController();
     final priceCtrl = TextEditingController();
-    File? pickedImage;
+    List<File> pickedImages = [];
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -419,27 +430,48 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                 const SizedBox(height: 12),
                 TextField(controller: priceCtrl, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Price (\u20B9)', prefixText: '\u20B9 ')),
                 const SizedBox(height: 12),
-                OutlinedButton.icon(
-                  onPressed: () async {
-                    final file = await StorageService.showImagePicker(ctx);
-                    if (file != null) setBS(() => pickedImage = file);
-                  },
-                  icon: Icon(pickedImage != null ? Icons.check_circle : Icons.camera_alt),
-                  label: Text(pickedImage != null ? 'Photo attached' : 'Add Photo'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: pickedImage != null ? AppColors.statusSuccess : null,
-                    side: pickedImage != null ? const BorderSide(color: AppColors.statusSuccess) : null,
+                if (pickedImages.length < 3)
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      final file = await StorageService.showImagePicker(ctx);
+                      if (file != null) setBS(() => pickedImages.add(file));
+                    },
+                    icon: Icon(pickedImages.isNotEmpty ? Icons.add_photo_alternate : Icons.camera_alt),
+                    label: Text(pickedImages.isEmpty ? 'Add Photo' : 'Add Another (${pickedImages.length}/3)'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: pickedImages.isNotEmpty ? AppColors.statusSuccess : null,
+                      side: pickedImages.isNotEmpty ? const BorderSide(color: AppColors.statusSuccess) : null,
+                    ),
                   ),
-                ),
-                if (pickedImage != null) ...[
+                if (pickedImages.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.file(
-                      pickedImage!,
-                      height: 120,
-                      width: double.infinity,
-                      fit: BoxFit.cover,
+                  SizedBox(
+                    height: 100,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: pickedImages.length,
+                      itemBuilder: (_, i) => Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: Stack(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.file(pickedImages[i], height: 100, width: 100, fit: BoxFit.cover),
+                            ),
+                            Positioned(
+                              top: 2, right: 2,
+                              child: GestureDetector(
+                                onTap: () => setBS(() => pickedImages.removeAt(i)),
+                                child: Container(
+                                  padding: const EdgeInsets.all(2),
+                                  decoration: const BoxDecoration(color: Colors.black54, shape: BoxShape.circle),
+                                  child: const Icon(Icons.close, size: 16, color: Colors.white),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -447,12 +479,14 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                 FilledButton(
                   onPressed: () async {
                     if (titleCtrl.text.isNotEmpty && priceCtrl.text.isNotEmpty) {
-                      String? photoUrl;
-                      if (pickedImage != null) {
-                        photoUrl = await StorageService.uploadImage(
-                          pickedImage!,
-                          'marketplace/${DateTime.now().millisecondsSinceEpoch}.jpg',
+                      List<String> photoUrls = [];
+                      for (int i = 0; i < pickedImages.length; i++) {
+                        final url = await StorageService.uploadImage(
+                          pickedImages[i],
+                          'marketplace/${DateTime.now().millisecondsSinceEpoch}_$i.jpg',
                         );
+                        debugPrint('Marketplace photoUrl: $url');
+                        if (url != null) photoUrls.add(url);
                       }
                       final item = MarketItem(
                         id: 'm_${DateTime.now().millisecondsSinceEpoch}',
@@ -460,8 +494,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                         price: double.tryParse(priceCtrl.text) ?? 0, category: 'Other',
                         seller: PrefsService.userName.isEmpty ? 'You' : PrefsService.userName,
                         sellerFlat: PrefsService.userFlat.isEmpty ? 'A-101' : PrefsService.userFlat,
-                        date: DateTime.now(), hasPhoto: pickedImage != null,
-                        photoUrl: photoUrl,
+                        date: DateTime.now(), hasPhoto: pickedImages.isNotEmpty,
+                        photoUrl: photoUrls.isNotEmpty ? photoUrls.first : null,
+                        photoUrls: photoUrls,
                       );
                       FirestoreService.addMarketItem(item);
                       if (!context.mounted) return;
@@ -516,11 +551,11 @@ class _ItemCard extends StatelessWidget {
               ),
               child: Stack(
                 children: [
-                  if (item.photoUrl != null && item.photoUrl!.isNotEmpty)
+                  if (item.allPhotoUrls.isNotEmpty)
                     ClipRRect(
                       borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                       child: Image.network(
-                        item.photoUrl!,
+                        item.allPhotoUrls.first,
                         height: 110,
                         width: double.infinity,
                         fit: BoxFit.cover,

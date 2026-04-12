@@ -486,6 +486,7 @@ class FirestoreService {
       isSold: d['isSold'] ?? false,
       hasPhoto: d['hasPhoto'] ?? false,
       photoUrl: d['photoUrl'] as String?,
+      photoUrls: List<String>.from(d['photoUrls'] ?? []),
     );
   }
 
@@ -501,6 +502,7 @@ class FirestoreService {
       'isSold': m.isSold,
       'hasPhoto': m.hasPhoto,
       'photoUrl': m.photoUrl,
+      'photoUrls': m.photoUrls,
       'society': PrefsService.societyName,
       'createdBy': AuthService.uid,
     });

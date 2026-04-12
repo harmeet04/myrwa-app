@@ -17,6 +17,8 @@ class EventsScreen extends StatefulWidget {
 }
 
 class _EventsScreenState extends State<EventsScreen> {
+  List<Event>? _cachedEvents;
+
   @override
   Widget build(BuildContext context) {
     final cs = Theme.of(context).colorScheme;
@@ -32,14 +34,22 @@ class _EventsScreenState extends State<EventsScreen> {
               onRetry: () => setState(() {}),
             );
           }
-          List<Event> events;
+
+          // Only update cache when Firestore data changes, not on every build
           if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
-            events = snapshot.data!.docs
+            _cachedEvents = snapshot.data!.docs
                 .map((d) => FirestoreService.eventFromDoc(d))
                 .toList();
-          } else {
-            events = MockData.events;
+          } else if (_cachedEvents == null) {
+            _cachedEvents = MockData.events.map((e) => Event(
+              id: e.id, title: e.title, description: e.description,
+              date: e.date, location: e.location, organizer: e.organizer,
+              rsvpCount: e.rsvpCount, maybeCount: e.maybeCount,
+              maxCapacity: e.maxCapacity, attendees: List<String>.from(e.attendees),
+              maybeAttendees: List<String>.from(e.maybeAttendees),
+            )).toList();
           }
+          final events = _cachedEvents!;
 
           // Restore RSVP from prefs
           final rsvps = PrefsService.rsvpStatus;
@@ -59,7 +69,6 @@ class _EventsScreenState extends State<EventsScreen> {
               itemCount: events.length,
               itemBuilder: (_, i) {
                 final e = events[i];
-                final spotsLeft = e.maxCapacity - e.rsvpCount;
                 return Card(
                   child: InkWell(
                     borderRadius: BorderRadius.circular(12),
@@ -101,8 +110,6 @@ class _EventsScreenState extends State<EventsScreen> {
                                   Flexible(child: Text(e.location, style: TextStyle(color: AppColors.textPrimary))),
                                 ],
                               ),
-                              const SizedBox(height: 4),
-                              Text('$spotsLeft spots left', style: TextStyle(color: spotsLeft < 10 ? AppColors.statusError : AppColors.statusSuccess, fontWeight: FontWeight.w500, fontSize: 12)),
                               const SizedBox(height: 8),
                               Row(
                                 children: [
@@ -110,10 +117,17 @@ class _EventsScreenState extends State<EventsScreen> {
                                   const Spacer(),
                                   if (!e.hasRsvpd) FilledButton.tonal(
                                     onPressed: () {
-                                      setState(() { e.hasRsvpd = true; e.rsvpCount++; });
+                                      setState(() {
+                                        e.hasRsvpd = true;
+                                        e.rsvpCount++;
+                                        e.attendees.add(PrefsService.userName);
+                                      });
                                       PrefsService.saveRsvp(e.id, true, e.plusOnes);
                                       if (e.id.isNotEmpty) {
-                                        FirestoreService.updateEvent(e.id, {'rsvpCount': e.rsvpCount});
+                                        FirestoreService.updateEvent(e.id, {
+                                          'rsvpCount': e.rsvpCount,
+                                          'attendees': e.attendees,
+                                        });
                                       }
                                     },
                                     style: FilledButton.styleFrom(visualDensity: VisualDensity.compact, textStyle: const TextStyle(fontSize: 12)),
@@ -124,12 +138,16 @@ class _EventsScreenState extends State<EventsScreen> {
                                       onPressed: () {
                                         setState(() {
                                           e.hasRsvpd = false;
-                                          e.rsvpCount = (e.rsvpCount - 1 - e.plusOnes).clamp(0, e.maxCapacity);
+                                          e.rsvpCount = (e.rsvpCount - 1 - e.plusOnes).clamp(0, 9999);
                                           e.plusOnes = 0;
+                                          e.attendees.remove(PrefsService.userName);
                                         });
                                         PrefsService.saveRsvp(e.id, false, 0);
                                         if (e.id.isNotEmpty) {
-                                          FirestoreService.updateEvent(e.id, {'rsvpCount': e.rsvpCount});
+                                          FirestoreService.updateEvent(e.id, {
+                                            'rsvpCount': e.rsvpCount,
+                                            'attendees': e.attendees,
+                                          });
                                         }
                                       },
                                       style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact, textStyle: const TextStyle(fontSize: 12)),
@@ -197,7 +215,7 @@ class _EventsScreenState extends State<EventsScreen> {
               _Row(Icons.calendar_today, formatDateTime(e.date)),
               _Row(Icons.location_on, e.location),
               _Row(Icons.group, 'Organized by ${e.organizer}'),
-              _Row(Icons.people, '${e.rsvpCount}/${e.maxCapacity} attending'),
+              _Row(Icons.people, '${e.rsvpCount} attending'),
               const SizedBox(height: 12),
               Text(e.description, style: const TextStyle(height: 1.5)),
               // +1 / family option
