@@ -22,10 +22,14 @@ class StorageService {
   /// Upload a file to Firebase Storage and return the download URL.
   static Future<String?> uploadImage(File file, String path) async {
     try {
+      debugPrint('StorageService: uploading to $path');
       final ref = _storage.ref().child(path);
       await ref.putFile(file);
-      return await ref.getDownloadURL();
+      final url = await ref.getDownloadURL();
+      debugPrint('StorageService: upload success, URL = $url');
+      return url;
     } catch (e) {
+      debugPrint('StorageService: upload FAILED — $e');
       return null;
     }
   }
