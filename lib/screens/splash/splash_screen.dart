@@ -36,8 +36,12 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
     Widget dest;
     if (AuthService.isLoggedIn && PrefsService.isLoggedIn) {
-      await AuthService.loadUserProfile();
-      await NotificationService.init();
+      try {
+        await AuthService.loadUserProfile().timeout(const Duration(seconds: 5));
+      } catch (_) {}
+      try {
+        await NotificationService.init().timeout(const Duration(seconds: 3));
+      } catch (_) {}
       if (!PrefsService.hasOnboarded) {
         dest = OnboardingScreen(onThemeToggle: widget.onThemeToggle);
       } else {
