@@ -19,7 +19,8 @@
       "Bash(npm install:*)",
       "Bash(firebase deploy:*)",
       "Bash(firebase use:*)",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8080)",
+      "Bash(dart run:*)"
     ]
   }
 }

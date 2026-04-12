@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head><title>myRWA Icon Generator</title></head>
+<body style="margin:0;padding:40px;background:#f0f0f0;font-family:system-ui;">
+<h2>Right-click the icon below → "Save image as" → save as <code>icon.png</code></h2>
+<p>Save it to: <code>C:\Users\thukr\Desktop\myrwa-app\assets\icon\icon.png</code></p>
+<br>
+<canvas id="c" width="1024" height="1024" style="border:1px solid #ccc;width:512px;height:512px;"></canvas>
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+
+// Background gradient
+const grad = ctx.createLinearGradient(0, 0, 1024, 1024);
+grad.addColorStop(0, '#F59E0B');
+grad.addColorStop(1, '#EA580C');
+
+// Rounded rect
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+// Draw background
+roundRect(0, 0, 1024, 1024, 224);
+ctx.fillStyle = grad;
+ctx.fill();
+
+// House body
+ctx.beginPath();
+ctx.moveTo(512, 220);
+ctx.lineTo(820, 480);
+ctx.lineTo(820, 804);
+ctx.lineTo(204, 804);
+ctx.lineTo(204, 480);
+ctx.closePath();
+ctx.fillStyle = 'rgba(255,255,255,0.95)';
+ctx.fill();
+
+// Roof
+ctx.beginPath();
+ctx.moveTo(512, 220);
+ctx.lineTo(820, 480);
+ctx.lineTo(204, 480);
+ctx.closePath();
+ctx.fillStyle = 'white';
+ctx.fill();
+
+// Door
+roundRect(432, 580, 160, 224, 12);
+ctx.fillStyle = 'rgba(234,88,12,0.5)';
+ctx.fill();
+
+// Door knob
+ctx.beginPath();
+ctx.arc(560, 700, 16, 0, Math.PI * 2);
+ctx.fillStyle = 'rgba(255,255,255,0.8)';
+ctx.fill();
+
+// Windows
+ctx.fillStyle = 'rgba(234,88,12,0.35)';
+roundRect(260, 510, 100, 100, 10);
+ctx.fill();
+roundRect(664, 510, 100, 100, 10);
+ctx.fill();
+
+// Window crosses
+ctx.strokeStyle = 'rgba(255,255,255,0.5)';
+ctx.lineWidth = 4;
+// Left window
+ctx.beginPath(); ctx.moveTo(310, 510); ctx.lineTo(310, 610); ctx.stroke();
+ctx.beginPath(); ctx.moveTo(260, 560); ctx.lineTo(360, 560); ctx.stroke();
+// Right window
+ctx.beginPath(); ctx.moveTo(714, 510); ctx.lineTo(714, 610); ctx.stroke();
+ctx.beginPath(); ctx.moveTo(664, 560); ctx.lineTo(764, 560); ctx.stroke();
+
+// Instructions
+document.body.innerHTML += '<br><br><p>Or download directly:</p>';
+const link = document.createElement('a');
+link.download = 'icon.png';
+link.href = c.toDataURL('image/png');
+link.textContent = '📥 Download icon.png (1024x1024)';
+link.style = 'font-size:20px;padding:12px 24px;background:#F59E0B;color:white;text-decoration:none;border-radius:12px;display:inline-block;';
+document.body.appendChild(link);
+</script>
+</body>
+</html>
