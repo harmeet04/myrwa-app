@@ -8,7 +8,6 @@ import '../../utils/app_colors.dart';
 import '../../utils/app_spacing.dart';
 import '../../services/firestore_service.dart';
 import '../../services/ai_service.dart';
-import '../../services/karma_service.dart';
 import '../../widgets/filter_chip_bar.dart';
 import '../../widgets/warm_card.dart';
 import '../../widgets/empty_state.dart';
@@ -326,8 +325,6 @@ class _NoticesScreenState extends State<NoticesScreen> {
                           }]),
                         });
                       }
-                      KarmaService.addPoints(KarmaService.commentPosted, 'Commented on notice');
-                      KarmaService.showKarmaToast(context, KarmaService.commentPosted, 'Commented on notice');
                       commentCtrl.clear();
                     },
                     icon: const Icon(Icons.send, color: AppColors.primaryAmber),

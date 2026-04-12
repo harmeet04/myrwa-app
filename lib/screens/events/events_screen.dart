@@ -6,7 +6,6 @@ import '../../utils/helpers.dart';
 import '../../models/models.dart';
 import '../../utils/prefs_service.dart';
 import '../../services/firestore_service.dart';
-import '../../services/karma_service.dart';
 import '../../utils/app_colors.dart';
 import '../../widgets/error_retry.dart';
 
@@ -113,8 +112,9 @@ class _EventsScreenState extends State<EventsScreen> {
                                     onPressed: () {
                                       setState(() { e.hasRsvpd = true; e.rsvpCount++; });
                                       PrefsService.saveRsvp(e.id, true, e.plusOnes);
-                                      KarmaService.addPoints(KarmaService.eventRsvp, 'RSVP to event');
-                                      KarmaService.showKarmaToast(context, KarmaService.eventRsvp, 'RSVP to event');
+                                      if (e.id.isNotEmpty) {
+                                        FirestoreService.updateEvent(e.id, {'rsvpCount': e.rsvpCount});
+                                      }
                                     },
                                     style: FilledButton.styleFrom(visualDensity: VisualDensity.compact, textStyle: const TextStyle(fontSize: 12)),
                                     child: const Text('RSVP'),
@@ -128,6 +128,9 @@ class _EventsScreenState extends State<EventsScreen> {
                                           e.plusOnes = 0;
                                         });
                                         PrefsService.saveRsvp(e.id, false, 0);
+                                        if (e.id.isNotEmpty) {
+                                          FirestoreService.updateEvent(e.id, {'rsvpCount': e.rsvpCount});
+                                        }
                                       },
                                       style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact, textStyle: const TextStyle(fontSize: 12)),
                                       child: const Text('Cancel RSVP'),

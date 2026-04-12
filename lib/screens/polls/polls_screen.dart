@@ -8,7 +8,6 @@ import '../../utils/prefs_service.dart';
 import '../../utils/app_colors.dart';
 import '../../services/firestore_service.dart';
 import '../../services/analytics_service.dart';
-import '../../services/karma_service.dart';
 import '../../widgets/error_retry.dart';
 
 class PollsScreen extends StatefulWidget {
@@ -117,8 +116,6 @@ class _PollsScreenState extends State<PollsScreen> {
                                   PrefsService.savePollVote(p.id, oi);
                                   FirestoreService.votePoll(p.id, oi);
                                   AnalyticsService.logPollVoted(p.id);
-                                  KarmaService.addPoints(KarmaService.pollVote, 'Voted in poll');
-                                  KarmaService.showKarmaToast(context, KarmaService.pollVote, 'Voted in poll');
                                   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
                                     content: Row(children: [
                                       const Icon(Icons.check_circle, color: Colors.white),

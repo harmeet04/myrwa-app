@@ -16,7 +16,6 @@ import '../documents/documents_screen.dart';
 import '../guard/guard_screen.dart';
 import '../ai_assistant/ai_assistant_screen.dart';
 import '../visitors/visitors_screen.dart';
-import '../karma/leaderboard_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   final VoidCallback onThemeToggle;
@@ -123,15 +122,6 @@ class MoreScreen extends StatelessWidget {
             bgColor: AppColors.purpleBg,
             onTap: () => _push(context, const VendorScreen()),
           ),
-          _MoreTile(
-            icon: Icons.stars,
-            title: 'Community Karma',
-            subtitle: 'Points, badges & leaderboard',
-            iconColor: const Color(0xFF7C3AED),
-            bgColor: AppColors.purpleBg,
-            onTap: () => _push(context, const LeaderboardScreen()),
-          ),
-
           if (PrefsService.isAdmin) ...[
             _SectionHeader('Admin'),
             _MoreTile(

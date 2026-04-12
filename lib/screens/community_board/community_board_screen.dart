@@ -251,7 +251,7 @@ class _BoardTab extends StatelessWidget {
             itemCount: docs.length,
             itemBuilder: (_, i) {
               final data = docs[i].data() as Map<String, dynamic>;
-              return _BoardPostCard(data: data, type: type);
+              return _BoardPostCard(data: data, type: type, docId: docs[i].id);
             },
           ),
         );
@@ -260,11 +260,20 @@ class _BoardTab extends StatelessWidget {
   }
 }
 
-class _BoardPostCard extends StatelessWidget {
+class _BoardPostCard extends StatefulWidget {
   final Map<String, dynamic> data;
   final String type;
+  final String docId;
 
-  const _BoardPostCard({required this.data, required this.type});
+  const _BoardPostCard({required this.data, required this.type, required this.docId});
+
+  @override
+  State<_BoardPostCard> createState() => _BoardPostCardState();
+}
+
+class _BoardPostCardState extends State<_BoardPostCard> {
+  Map<String, dynamic> get data => widget.data;
+  String get type => widget.type;
 
   static String _typeEmoji(String t) {
     switch (t) {
@@ -389,32 +398,71 @@ class _BoardPostCard extends StatelessWidget {
                 ),
               ],
               const Spacer(),
-              InkWell(
-                onTap: () => showSnack(context,
-                    'Message sent to $author!'),
-                borderRadius: BorderRadius.circular(8),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 12, vertical: 5),
-                  decoration: BoxDecoration(
-                    color: AppColors.greenBg,
-                    borderRadius: BorderRadius.circular(8),
-                    border:
-                        Border.all(color: AppColors.greenBorder),
-                  ),
-                  child: const Text(
-                    'Interested',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF16A34A),
-                    ),
-                  ),
-                ),
-              ),
+              _buildInterestedButton(context, author),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildInterestedButton(BuildContext context, String author) {
+    final currentUser = PrefsService.userName;
+    final interested = List<String>.from(data['interested'] ?? []);
+    final isOwnPost = author == currentUser;
+    final alreadyInterested = interested.contains(currentUser);
+
+    if (isOwnPost) {
+      if (interested.isEmpty) return const SizedBox.shrink();
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppColors.amberBg,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.amberBorder),
+        ),
+        child: Text(
+          '${interested.length} interested',
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryAmber),
+        ),
+      );
+    }
+
+    if (alreadyInterested) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppColors.amberBg,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.amberBorder),
+        ),
+        child: Text(
+          '${interested.length} interested',
+          style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primaryAmber),
+        ),
+      );
+    }
+
+    return InkWell(
+      onTap: () async {
+        await FirestoreService.updateDoc('community_board', widget.docId, {
+          'interested': FieldValue.arrayUnion([currentUser]),
+        });
+        if (!context.mounted) return;
+        showSnack(context, 'You expressed interest!');
+      },
+      borderRadius: BorderRadius.circular(8),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+        decoration: BoxDecoration(
+          color: AppColors.greenBg,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: AppColors.greenBorder),
+        ),
+        child: const Text(
+          'Interested',
+          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF16A34A)),
+        ),
       ),
     );
   }

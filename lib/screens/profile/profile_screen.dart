@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:provider/provider.dart';
 import '../../utils/prefs_service.dart';
 import '../../utils/helpers.dart';
 import '../../utils/locale_provider.dart';
 import '../../services/auth_service.dart';
 import '../../services/firestore_service.dart';
-import '../../services/karma_service.dart';
 import '../../utils/app_colors.dart';
 import '../auth/auth_screen.dart';
-import '../karma/leaderboard_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback onThemeToggle;
@@ -90,11 +87,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Center(child: Text('Flat ${PrefsService.userFlat} • ${PrefsService.societyName}',
               style: TextStyle(color: AppColors.textSecondary))),
           const SizedBox(height: 16),
-
-          // Karma Summary
-          _KarmaSummaryCard(),
-
-          const SizedBox(height: 8),
 
           _SectionHeader(locale.get('account')),
           _SettingsTile(icon: Icons.person, title: locale.get('edit_profile'), onTap: () => _editProfile(context)),
@@ -364,72 +356,3 @@ class _SettingsTile extends StatelessWidget {
   );
 }
 
-class _KarmaSummaryCard extends StatelessWidget {
-  const _KarmaSummaryCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<DocumentSnapshot>(
-      stream: KarmaService.myKarmaStream(),
-      builder: (context, snapshot) {
-        int points = 0;
-        if (snapshot.hasData && snapshot.data!.exists) {
-          final data = snapshot.data!.data() as Map<String, dynamic>;
-          points = (data['totalPoints'] ?? 0) as int;
-        }
-        final badge = KarmaService.getBadge(points);
-        final badgeColor = Color(KarmaService.getBadgeColor(points));
-
-        return GestureDetector(
-          onTap: () => Navigator.of(context).push(
-            MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
-          ),
-          child: Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFFEF3C7), Color(0xFFFDE68A)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFF59E0B).withValues(alpha: 0.5)),
-            ),
-            child: Row(
-              children: [
-                const Text('🌟', style: TextStyle(fontSize: 28)),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '$points karma points',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        badge,
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: badgeColor,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Icon(Icons.chevron_right, color: AppColors.textTertiary),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-}

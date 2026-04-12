@@ -223,31 +223,66 @@ class _FacilityScreenState extends State<FacilityScreen> {
                       final date = (d['date'] as Timestamp?)?.toDate() ?? DateTime.now();
                       final isPast = date.isBefore(DateTime.now().subtract(const Duration(days: 1)));
                       return Card(
-                        child: ListTile(
-                          leading: Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: isPast ? AppColors.cardBorder : AppColors.amberBg,
-                              borderRadius: BorderRadius.circular(8),
+                        child: Column(
+                          children: [
+                            ListTile(
+                              leading: Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: isPast ? AppColors.cardBorder : AppColors.amberBg,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Icon(Icons.event_available, color: isPast ? AppColors.textTertiary : AppColors.primaryAmber),
+                              ),
+                              title: Text(
+                                (d['facilityName'] as String?)?.split('/').first.trim() ?? 'Unknown',
+                                style: const TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              subtitle: Text('${formatDate(date)} • ${d['slot'] ?? '-'}'),
+                              trailing: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: isPast ? AppColors.cardBorder : AppColors.greenBg,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  isPast ? 'Past' : 'Upcoming',
+                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: isPast ? AppColors.textTertiary : AppColors.statusSuccess),
+                                ),
+                              ),
                             ),
-                            child: Icon(Icons.event_available, color: isPast ? AppColors.textTertiary : AppColors.primaryAmber),
-                          ),
-                          title: Text(
-                            (d['facilityName'] as String?)?.split('/').first.trim() ?? 'Unknown',
-                            style: const TextStyle(fontWeight: FontWeight.w600),
-                          ),
-                          subtitle: Text('${formatDate(date)} • ${d['slot'] ?? '-'}'),
-                          trailing: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                              color: isPast ? AppColors.cardBorder : AppColors.greenBg,
-                              borderRadius: BorderRadius.circular(6),
-                            ),
-                            child: Text(
-                              isPast ? 'Past' : 'Upcoming',
-                              style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: isPast ? AppColors.textTertiary : AppColors.statusSuccess),
-                            ),
-                          ),
+                            if (!isPast)
+                              Padding(
+                                padding: const EdgeInsets.only(right: 8, bottom: 4),
+                                child: Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton(
+                                    onPressed: () async {
+                                      final confirm = await showDialog<bool>(
+                                        context: ctx,
+                                        builder: (_) => AlertDialog(
+                                          title: const Text('Cancel Booking'),
+                                          content: const Text('Are you sure you want to cancel this booking?'),
+                                          actions: [
+                                            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('No')),
+                                            FilledButton(
+                                              style: FilledButton.styleFrom(backgroundColor: AppColors.statusError),
+                                              onPressed: () => Navigator.pop(ctx, true),
+                                              child: const Text('Cancel Booking'),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm == true) {
+                                        await FirestoreService.deleteDoc('facility_bookings', docs[i].id);
+                                        if (ctx.mounted) showSnack(ctx, 'Booking cancelled');
+                                      }
+                                    },
+                                    child: const Text('Cancel', style: TextStyle(color: AppColors.statusError)),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                       );
                     },

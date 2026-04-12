@@ -485,6 +485,7 @@ class FirestoreService {
       date: (d['date'] as Timestamp?)?.toDate() ?? DateTime.now(),
       isSold: d['isSold'] ?? false,
       hasPhoto: d['hasPhoto'] ?? false,
+      photoUrl: d['photoUrl'] as String?,
     );
   }
 
@@ -499,6 +500,7 @@ class FirestoreService {
       'date': Timestamp.fromDate(m.date),
       'isSold': m.isSold,
       'hasPhoto': m.hasPhoto,
+      'photoUrl': m.photoUrl,
       'society': PrefsService.societyName,
       'createdBy': AuthService.uid,
     });

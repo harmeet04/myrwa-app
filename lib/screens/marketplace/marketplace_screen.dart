@@ -8,7 +8,6 @@ import '../../models/models.dart';
 import '../../utils/app_colors.dart';
 import '../../services/firestore_service.dart';
 import '../../services/storage_service.dart';
-import '../../services/karma_service.dart';
 import '../chat/chat_screen.dart';
 
 class MarketplaceScreen extends StatefulWidget {
@@ -465,9 +464,7 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
                         photoUrl: photoUrl,
                       );
                       FirestoreService.addMarketItem(item);
-                      KarmaService.addPoints(KarmaService.marketplaceListing, 'Listed marketplace item');
                       if (!context.mounted) return;
-                      KarmaService.showKarmaToast(context, KarmaService.marketplaceListing, 'Listed marketplace item');
                       Navigator.pop(ctx);
                       showSnack(context, '\u2705 Item listed!');
                     }
@@ -510,7 +507,7 @@ class _ItemCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Image placeholder with category icon
+            // Image or category icon
             Container(
               height: 110, width: double.infinity,
               decoration: BoxDecoration(
@@ -519,7 +516,19 @@ class _ItemCard extends StatelessWidget {
               ),
               child: Stack(
                 children: [
-                  Center(child: Icon(categoryIcon, size: 48, color: categoryColor.withValues(alpha: 0.4))),
+                  if (item.photoUrl != null && item.photoUrl!.isNotEmpty)
+                    ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                      child: Image.network(
+                        item.photoUrl!,
+                        height: 110,
+                        width: double.infinity,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, e, st) => Center(child: Icon(categoryIcon, size: 48, color: categoryColor.withValues(alpha: 0.4))),
+                      ),
+                    )
+                  else
+                    Center(child: Icon(categoryIcon, size: 48, color: categoryColor.withValues(alpha: 0.4))),
                   if (item.isSold) Container(
                     decoration: BoxDecoration(
                       color: Colors.black54,

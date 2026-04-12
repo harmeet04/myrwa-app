@@ -21,7 +21,6 @@ import '../../widgets/shimmer_loader.dart';
 import '../../widgets/error_retry.dart';
 import '../chat/chat_screen.dart';
 import '../../services/analytics_service.dart';
-import '../../services/karma_service.dart';
 
 class ComplaintsScreen extends StatefulWidget {
   const ComplaintsScreen({super.key});
@@ -582,9 +581,7 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
                           extraFields: noiseExtra,
                         );
                         AnalyticsService.logComplaintCreated(category);
-                        KarmaService.addPoints(KarmaService.complaintFiled, 'Filed complaint');
                         if (!context.mounted) return;
-                        KarmaService.showKarmaToast(context, KarmaService.complaintFiled, 'Filed complaint');
                         Navigator.pop(ctx);
                         showSnack(context, '\u2705 Complaint raised successfully!${aiApplied ? ' (AI categorized)' : ''}');
                       }
