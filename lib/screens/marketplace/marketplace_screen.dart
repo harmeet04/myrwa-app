@@ -109,7 +109,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
             stream: FirestoreService.marketplaceStream(society),
             builder: (context, snapshot) {
               List<MarketItem> items;
-              if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+              if (snapshot.hasError) {
+                items = MockData.marketItems;
+              } else if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
                 items = snapshot.data!.docs
                     .map((d) => FirestoreService.marketItemFromDoc(d))
                     .toList();
@@ -186,7 +188,9 @@ class _MarketplaceScreenState extends State<MarketplaceScreen> with SingleTicker
             stream: FirestoreService.servicesStream(society),
             builder: (context, snapshot) {
               List<ServiceItem> services;
-              if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
+              if (snapshot.hasError) {
+                services = MockData.services;
+              } else if (snapshot.hasData && snapshot.data!.docs.isNotEmpty) {
                 services = snapshot.data!.docs
                     .map((d) => FirestoreService.serviceItemFromDoc(d))
                     .toList();

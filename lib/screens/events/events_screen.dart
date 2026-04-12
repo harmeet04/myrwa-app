@@ -88,60 +88,64 @@ class _EventsScreenState extends State<EventsScreen> {
                         ),
                         Padding(
                           padding: const EdgeInsets.all(16),
-                          child: Row(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Icon(Icons.calendar_today, size: 16, color: AppColors.textSecondary),
-                              const SizedBox(width: 6),
-                              Text(formatDateTime(e.date), style: TextStyle(color: AppColors.textPrimary)),
-                              const SizedBox(width: 16),
-                              Icon(Icons.location_on, size: 16, color: AppColors.textSecondary),
-                              const SizedBox(width: 4),
-                              Text(e.location, style: TextStyle(color: AppColors.textPrimary)),
-                              const Spacer(),
-                              Text('$spotsLeft spots left', style: TextStyle(color: spotsLeft < 10 ? AppColors.statusError : AppColors.statusSuccess, fontWeight: FontWeight.w500, fontSize: 12)),
-                            ],
-                          ),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                          child: Row(
-                            children: [
-                              Text('${e.rsvpCount} going', style: TextStyle(color: cs.primary, fontWeight: FontWeight.w500)),
-                              if (e.maybeCount > 0) Text(', ${e.maybeCount} maybe', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
-                              const Spacer(),
-                              if (!e.hasRsvpd) FilledButton.tonal(
-                                onPressed: () {
-                                  setState(() { e.hasRsvpd = true; e.rsvpCount++; });
-                                  PrefsService.saveRsvp(e.id, true, e.plusOnes);
-                                  KarmaService.addPoints(KarmaService.eventRsvp, 'RSVP to event');
-                                  KarmaService.showKarmaToast(context, KarmaService.eventRsvp, 'RSVP to event');
-                                },
-                                child: const Text('RSVP'),
-                              )
-                              else OutlinedButton(
-                                onPressed: () {
-                                  setState(() {
-                                    e.hasRsvpd = false;
-                                    e.rsvpCount = (e.rsvpCount - 1 - e.plusOnes).clamp(0, e.maxCapacity);
-                                    e.plusOnes = 0;
-                                  });
-                                  PrefsService.saveRsvp(e.id, false, 0);
-                                },
-                                child: const Text('Cancel RSVP'),
+                              Row(
+                                children: [
+                                  Icon(Icons.calendar_today, size: 16, color: AppColors.textSecondary),
+                                  const SizedBox(width: 6),
+                                  Flexible(child: Text(formatDateTime(e.date), style: TextStyle(color: AppColors.textPrimary))),
+                                  const SizedBox(width: 12),
+                                  Icon(Icons.location_on, size: 16, color: AppColors.textSecondary),
+                                  const SizedBox(width: 4),
+                                  Flexible(child: Text(e.location, style: TextStyle(color: AppColors.textPrimary))),
+                                ],
                               ),
-                              if (e.hasRsvpd) ...[
-                                const SizedBox(width: 8),
-                                OutlinedButton.icon(
-                                  onPressed: () => _addToCalendar(e),
-                                  icon: const Icon(Icons.calendar_month, size: 16),
-                                  label: const Text('Add to Calendar', style: TextStyle(fontSize: 12)),
-                                  style: OutlinedButton.styleFrom(
-                                    foregroundColor: AppColors.primaryAmber,
-                                    side: const BorderSide(color: AppColors.amberBorder),
-                                    visualDensity: VisualDensity.compact,
-                                  ),
-                                ),
-                              ],
+                              const SizedBox(height: 4),
+                              Text('$spotsLeft spots left', style: TextStyle(color: spotsLeft < 10 ? AppColors.statusError : AppColors.statusSuccess, fontWeight: FontWeight.w500, fontSize: 12)),
+                              const SizedBox(height: 8),
+                              Row(
+                                children: [
+                                  Text('${e.rsvpCount} going', style: TextStyle(color: cs.primary, fontWeight: FontWeight.w500)),
+                                  const Spacer(),
+                                  if (!e.hasRsvpd) FilledButton.tonal(
+                                    onPressed: () {
+                                      setState(() { e.hasRsvpd = true; e.rsvpCount++; });
+                                      PrefsService.saveRsvp(e.id, true, e.plusOnes);
+                                      KarmaService.addPoints(KarmaService.eventRsvp, 'RSVP to event');
+                                      KarmaService.showKarmaToast(context, KarmaService.eventRsvp, 'RSVP to event');
+                                    },
+                                    style: FilledButton.styleFrom(visualDensity: VisualDensity.compact, textStyle: const TextStyle(fontSize: 12)),
+                                    child: const Text('RSVP'),
+                                  )
+                                  else ...[
+                                    OutlinedButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          e.hasRsvpd = false;
+                                          e.rsvpCount = (e.rsvpCount - 1 - e.plusOnes).clamp(0, e.maxCapacity);
+                                          e.plusOnes = 0;
+                                        });
+                                        PrefsService.saveRsvp(e.id, false, 0);
+                                      },
+                                      style: OutlinedButton.styleFrom(visualDensity: VisualDensity.compact, textStyle: const TextStyle(fontSize: 12)),
+                                      child: const Text('Cancel RSVP'),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    OutlinedButton.icon(
+                                      onPressed: () => _addToCalendar(e),
+                                      icon: const Icon(Icons.calendar_month, size: 14),
+                                      label: const Text('Calendar', style: TextStyle(fontSize: 12)),
+                                      style: OutlinedButton.styleFrom(
+                                        foregroundColor: AppColors.primaryAmber,
+                                        side: const BorderSide(color: AppColors.amberBorder),
+                                        visualDensity: VisualDensity.compact,
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
                             ],
                           ),
                         ),
@@ -190,7 +194,7 @@ class _EventsScreenState extends State<EventsScreen> {
               _Row(Icons.calendar_today, formatDateTime(e.date)),
               _Row(Icons.location_on, e.location),
               _Row(Icons.group, 'Organized by ${e.organizer}'),
-              _Row(Icons.people, '${e.rsvpCount}/${e.maxCapacity} attending${e.maybeCount > 0 ? ', ${e.maybeCount} maybe' : ''}'),
+              _Row(Icons.people, '${e.rsvpCount}/${e.maxCapacity} attending'),
               const SizedBox(height: 12),
               Text(e.description, style: const TextStyle(height: 1.5)),
               // +1 / family option
@@ -244,19 +248,6 @@ class _EventsScreenState extends State<EventsScreen> {
                     visualDensity: VisualDensity.compact,
                   )).toList(),
                 ),
-              if (e.maybeAttendees.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text('Maybe (${e.maybeAttendees.length})', style: TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
-                const SizedBox(height: 8),
-                Wrap(
-                  spacing: 6, runSpacing: 6,
-                  children: e.maybeAttendees.map((name) => Chip(
-                    avatar: CircleAvatar(backgroundColor: AppColors.cardBorder, child: Text(name[0], style: const TextStyle(fontSize: 11))),
-                    label: Text(name, style: const TextStyle(fontSize: 12)),
-                    visualDensity: VisualDensity.compact,
-                  )).toList(),
-                ),
-              ],
               const SizedBox(height: 16),
             ],
           ),
