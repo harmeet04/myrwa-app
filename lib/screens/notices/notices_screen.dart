@@ -650,9 +650,13 @@ class _NoticeCard extends StatelessWidget {
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Row 1: category chip + spacer + time/NEW badge
+              // Row 1: pin + category chip + spacer + time/NEW badge
               Row(
                 children: [
+                  if (notice.isPinned) ...[
+                    const Text('📌', style: TextStyle(fontSize: 13)),
+                    const SizedBox(width: 6),
+                  ],
                   Container(
                     padding: const EdgeInsets.symmetric(
                         horizontal: 8, vertical: 3),
@@ -780,13 +784,6 @@ class _NoticeCard extends StatelessWidget {
               ),
             ],
           ),
-          // Pin icon top-left overlay
-          if (notice.isPinned)
-            const Positioned(
-              top: 0,
-              left: 0,
-              child: Text('📌', style: TextStyle(fontSize: 14)),
-            ),
         ],
       ),
     );
