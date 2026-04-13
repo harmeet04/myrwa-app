@@ -22,6 +22,15 @@ class _VendorScreenState extends State<VendorScreen> {
     final society = PrefsService.societyName;
     return Scaffold(
       appBar: AppBar(title: const Text('Vendor Marketplace / सेवा प्रदाता')),
+      floatingActionButton: PrefsService.isAdmin
+          ? FloatingActionButton.extended(
+              onPressed: () => _showAddVendor(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Add Vendor'),
+              backgroundColor: AppColors.primaryAmber,
+              foregroundColor: Colors.white,
+            )
+          : null,
       body: Column(
         children: [
           SizedBox(
@@ -135,6 +144,93 @@ class _VendorScreenState extends State<VendorScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  void _showAddVendor(BuildContext context) {
+    final nameCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    final availCtrl = TextEditingController(text: 'Mon-Sat 9AM-6PM');
+    String selectedCategory = 'Plumber';
+    const vendorCategories = ['Plumber', 'Electrician', 'Carpenter', 'Painter', 'AC Repair', 'Pest Control', 'Cleaning', 'Other'];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setBS) => Padding(
+          padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.cardBorder, borderRadius: BorderRadius.circular(2)))),
+                const SizedBox(height: 16),
+                const Text('Add Vendor', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: nameCtrl,
+                  decoration: const InputDecoration(labelText: 'Name'),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: selectedCategory,
+                  decoration: const InputDecoration(labelText: 'Category'),
+                  items: vendorCategories.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                  onChanged: (v) => setBS(() => selectedCategory = v!),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: phoneCtrl,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(labelText: 'Phone'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descCtrl,
+                  maxLines: 2,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: availCtrl,
+                  decoration: const InputDecoration(labelText: 'Availability (e.g., Mon-Sat 9AM-6PM)'),
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: () async {
+                    if (nameCtrl.text.isEmpty || phoneCtrl.text.isEmpty) {
+                      showSnack(context, 'Please fill name and phone', isError: true);
+                      return;
+                    }
+                    await FirestoreService.addDoc('vendors', {
+                      'name': nameCtrl.text,
+                      'category': selectedCategory,
+                      'phone': phoneCtrl.text,
+                      'description': descCtrl.text,
+                      'availability': availCtrl.text,
+                      'rating': 0.0,
+                      'reviewCount': 0,
+                      'priceRange': '',
+                      'area': '',
+                      'isVerified': false,
+                    });
+                    if (!context.mounted) return;
+                    Navigator.pop(ctx);
+                    showSnack(context, 'Vendor added successfully!');
+                    setState(() {});
+                  },
+                  style: FilledButton.styleFrom(backgroundColor: AppColors.primaryAmber),
+                  child: const Text('Add Vendor'),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

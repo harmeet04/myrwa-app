@@ -25,6 +25,15 @@ class _EventsScreenState extends State<EventsScreen> {
     final society = PrefsService.societyName;
     return Scaffold(
       appBar: AppBar(title: const Text('Events / \u0915\u093E\u0930\u094D\u092F\u0915\u094D\u0930\u092E')),
+      floatingActionButton: PrefsService.isAdmin
+          ? FloatingActionButton.extended(
+              onPressed: () => _showCreateEvent(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Create Event'),
+              backgroundColor: AppColors.primaryAmber,
+              foregroundColor: Colors.white,
+            )
+          : null,
       body: StreamBuilder<QuerySnapshot>(
         stream: FirestoreService.eventsStream(society),
         builder: (context, snapshot) {
@@ -178,6 +187,110 @@ class _EventsScreenState extends State<EventsScreen> {
             ),
           );
         },
+      ),
+    );
+  }
+
+  void _showCreateEvent(BuildContext context) {
+    final titleCtrl = TextEditingController();
+    final descCtrl = TextEditingController();
+    final locationCtrl = TextEditingController();
+    final capacityCtrl = TextEditingController(text: '50');
+    DateTime? selectedDate;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setBS) => Padding(
+          padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(color: AppColors.cardBorder, borderRadius: BorderRadius.circular(2)))),
+                const SizedBox(height: 16),
+                const Text('Create Event', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: titleCtrl,
+                  decoration: const InputDecoration(labelText: 'Title'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descCtrl,
+                  maxLines: 3,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    final date = await showDatePicker(
+                      context: ctx,
+                      initialDate: DateTime.now().add(const Duration(days: 1)),
+                      firstDate: DateTime.now(),
+                      lastDate: DateTime.now().add(const Duration(days: 365)),
+                    );
+                    if (date == null || !ctx.mounted) return;
+                    final time = await showTimePicker(
+                      context: ctx,
+                      initialTime: const TimeOfDay(hour: 18, minute: 0),
+                    );
+                    if (time != null) {
+                      setBS(() {
+                        selectedDate = DateTime(date.year, date.month, date.day, time.hour, time.minute);
+                      });
+                    }
+                  },
+                  icon: const Icon(Icons.calendar_today, size: 16),
+                  label: Text(selectedDate != null ? formatDateTime(selectedDate!) : 'Pick Date & Time'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: AppColors.primaryAmber,
+                    side: const BorderSide(color: AppColors.amberBorder),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: locationCtrl,
+                  decoration: const InputDecoration(labelText: 'Location'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: capacityCtrl,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(labelText: 'Max Capacity'),
+                ),
+                const SizedBox(height: 16),
+                FilledButton(
+                  onPressed: () async {
+                    if (titleCtrl.text.isEmpty || descCtrl.text.isEmpty || selectedDate == null || locationCtrl.text.isEmpty) {
+                      showSnack(context, 'Please fill all fields', isError: true);
+                      return;
+                    }
+                    final event = Event(
+                      id: '',
+                      title: titleCtrl.text,
+                      description: descCtrl.text,
+                      date: selectedDate!,
+                      location: locationCtrl.text,
+                      organizer: PrefsService.userName.isEmpty ? 'Admin' : PrefsService.userName,
+                      maxCapacity: int.tryParse(capacityCtrl.text) ?? 50,
+                    );
+                    await FirestoreService.addEvent(event);
+                    if (!context.mounted) return;
+                    Navigator.pop(ctx);
+                    showSnack(context, 'Event created successfully!');
+                    setState(() {});
+                  },
+                  style: FilledButton.styleFrom(backgroundColor: AppColors.primaryAmber),
+                  child: const Text('Create Event'),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

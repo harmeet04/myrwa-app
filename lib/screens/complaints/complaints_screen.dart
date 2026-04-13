@@ -212,6 +212,27 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
                 ),
               ),
             ],
+            if (PrefsService.isAdmin) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.pop(context);
+                  Navigator.push(context, MaterialPageRoute(
+                    builder: (_) => ChatScreen(
+                      otherName: c.raisedBy,
+                      otherFlat: c.flat,
+                      otherId: c.flat,
+                    ),
+                  ));
+                },
+                icon: const Icon(Icons.chat, size: 16),
+                label: Text('Chat with ${c.raisedBy}'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: AppColors.primaryAmber,
+                  side: const BorderSide(color: AppColors.amberBorder),
+                ),
+              ),
+            ],
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,
