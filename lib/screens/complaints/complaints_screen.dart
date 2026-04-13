@@ -21,6 +21,8 @@ import '../../widgets/shimmer_loader.dart';
 import '../../widgets/error_retry.dart';
 import '../chat/chat_screen.dart';
 import '../../services/analytics_service.dart';
+import 'package:provider/provider.dart';
+import '../../utils/locale_provider.dart';
 
 class ComplaintsScreen extends StatefulWidget {
   const ComplaintsScreen({super.key});
@@ -53,7 +55,7 @@ class _ComplaintsScreenState extends State<ComplaintsScreen> {
     return Scaffold(
       backgroundColor: AppColors.scaffoldLight,
       appBar: AppBar(
-        title: const Text('Complaints'),
+        title: Text(context.read<LocaleProvider>().get('complaints')),
       ),
       floatingActionButton: Container(
         decoration: BoxDecoration(

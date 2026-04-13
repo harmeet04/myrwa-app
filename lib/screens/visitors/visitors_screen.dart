@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../models/models.dart';
 import '../../utils/mock_data.dart';
 import '../../utils/helpers.dart';
@@ -14,6 +15,8 @@ import '../../widgets/status_chip.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/error_retry.dart';
 import '../../services/analytics_service.dart';
+import 'package:provider/provider.dart';
+import '../../utils/locale_provider.dart';
 
 class VisitorsScreen extends StatefulWidget {
   const VisitorsScreen({super.key});
@@ -46,7 +49,7 @@ class _VisitorsScreenState extends State<VisitorsScreen> {
     return Scaffold(
       backgroundColor: AppColors.scaffoldLight,
       appBar: AppBar(
-        title: const Text('Visitor Management'),
+        title: Text(context.read<LocaleProvider>().get('visitor_management')),
         backgroundColor: AppColors.scaffoldLight,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
@@ -100,8 +103,11 @@ class _VisitorsScreenState extends State<VisitorsScreen> {
                           itemBuilder: (_, i) => _VisitorCard(
                             visitor: filtered[i],
                             onApprove: () {
-                              FirestoreService.updateVisitor(filtered[i].id, {'status': 'approved'});
-                              AnalyticsService.logVisitorAction('approved');
+                              // Delivery visitors are one-time — mark completed directly
+                              final isDelivery = filtered[i].purpose.toLowerCase().contains('delivery');
+                              final newStatus = isDelivery ? 'completed' : 'approved';
+                              FirestoreService.updateVisitor(filtered[i].id, {'status': newStatus});
+                              AnalyticsService.logVisitorAction(newStatus);
                             },
                             onReject: () {
                               FirestoreService.updateVisitor(filtered[i].id, {'status': 'rejected'});
@@ -358,8 +364,36 @@ class _VisitorsScreenState extends State<VisitorsScreen> {
                 );
               }
               Navigator.pop(ctx);
-              final label = isRecurring ? 'Recurring pass created! OTP: $otp' : 'Visitor pre-approved! OTP: $otp';
-              showSnack(context, label);
+              final visitorName = nameCtrl.text;
+              // Show OTP dialog with WhatsApp share option
+              showDialog(
+                context: context,
+                builder: (_) => AlertDialog(
+                  title: const Text('Visitor Pre-approved!'),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text('OTP for $visitorName:', style: const TextStyle(fontSize: 14)),
+                      const SizedBox(height: 8),
+                      Text(otp, style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, letterSpacing: 8)),
+                      const SizedBox(height: 12),
+                      const Text('Share this OTP with the visitor', style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+                    FilledButton.icon(
+                      onPressed: () {
+                        final text = 'Your OTP for visiting ${PrefsService.societyName} (Flat ${PrefsService.userFlat}) is: $otp\n\nShow this to the guard. — via myRWA';
+                        final url = Uri.parse('https://wa.me/?text=${Uri.encodeComponent(text)}');
+                        launchUrl(url, mode: LaunchMode.externalApplication);
+                      },
+                      icon: const Icon(Icons.share),
+                      label: const Text('Share via WhatsApp'),
+                    ),
+                  ],
+                ),
+              );
             }
           },
           borderRadius: BorderRadius.circular(AppSpacing.radiusButton),

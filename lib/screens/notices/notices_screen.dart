@@ -15,6 +15,8 @@ import '../../widgets/shimmer_loader.dart';
 import '../../widgets/error_retry.dart';
 import '../../services/analytics_service.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:provider/provider.dart';
+import '../../utils/locale_provider.dart';
 
 class NoticesScreen extends StatefulWidget {
   const NoticesScreen({super.key});
@@ -64,7 +66,7 @@ class _NoticesScreenState extends State<NoticesScreen> {
       backgroundColor: AppColors.scaffoldLight,
       appBar: AppBar(
         backgroundColor: AppColors.scaffoldLight,
-        title: const Text('Notice Board'),
+        title: Text(context.read<LocaleProvider>().get('notice_board')),
         elevation: 0,
       ),
       floatingActionButton: PrefsService.isAdmin

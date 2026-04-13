@@ -44,6 +44,12 @@ class AdminPanelScreen extends StatelessWidget {
           _AdminTile(icon: Icons.volume_up, title: 'Noise Reports',
             subtitle: 'Track noise/nuisance complaints', color: AppColors.statusWarning,
             onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _NoiseReportPage()))),
+          _AdminTile(icon: Icons.security, title: 'Manage Guards',
+            subtitle: 'Add guards, assign gates', color: AppColors.statusSuccess,
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _ManageGuardsPage()))),
+          _AdminTile(icon: Icons.manage_accounts, title: 'Manage Managers',
+            subtitle: 'Facility managers', color: const Color(0xFF7C3AED),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const _ManageManagersPage()))),
         ],
       ),
     );
@@ -384,6 +390,234 @@ class _NoiseReportPage extends StatelessWidget {
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+// Manage Guards Page
+// ──────────────────────────────────────────────
+
+class _ManageGuardsPage extends StatefulWidget {
+  const _ManageGuardsPage();
+
+  @override
+  State<_ManageGuardsPage> createState() => _ManageGuardsPageState();
+}
+
+class _ManageGuardsPageState extends State<_ManageGuardsPage> {
+  @override
+  Widget build(BuildContext context) {
+    final society = PrefsService.societyName;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Manage Guards')),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.statusSuccess,
+        onPressed: () => _showAddGuardSheet(context, society),
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('societies').doc(society)
+            .collection('users')
+            .where('role', isEqualTo: 'guard')
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final docs = snapshot.data!.docs;
+          if (docs.isEmpty) {
+            return const Center(
+              child: Text('No guards added yet.\nTap + to add one.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.textSecondary)),
+            );
+          }
+          return ListView.builder(
+            itemCount: docs.length,
+            itemBuilder: (_, i) {
+              final d = docs[i].data() as Map<String, dynamic>;
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: AppColors.statusSuccess.withValues(alpha: 0.15),
+                  child: const Icon(Icons.security, color: AppColors.statusSuccess),
+                ),
+                title: Text(d['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w500)),
+                subtitle: Text('${d['phone'] ?? ''} • Gate: ${d['gate'] ?? 'Unassigned'}'),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete_outline, color: AppColors.statusError),
+                  onPressed: () {
+                    docs[i].reference.delete();
+                    showSnack(context, '${d['name']} removed');
+                  },
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  void _showAddGuardSheet(BuildContext context, String society) {
+    final nameCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final gateCtrl = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('Add Guard', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name', prefixIcon: Icon(Icons.person_outline))),
+            const SizedBox(height: 12),
+            TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Phone', prefixIcon: Icon(Icons.phone_outlined)), keyboardType: TextInputType.phone),
+            const SizedBox(height: 12),
+            TextField(controller: gateCtrl, decoration: const InputDecoration(labelText: 'Assign to Gate (e.g. Main Gate)', prefixIcon: Icon(Icons.door_front_door_outlined))),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: () {
+                if (nameCtrl.text.isEmpty || phoneCtrl.text.isEmpty) return;
+                FirebaseFirestore.instance
+                    .collection('societies').doc(society)
+                    .collection('users')
+                    .add({
+                  'name': nameCtrl.text.trim(),
+                  'phone': phoneCtrl.text.trim(),
+                  'gate': gateCtrl.text.trim().isEmpty ? 'Unassigned' : gateCtrl.text.trim(),
+                  'role': 'guard',
+                  'isGuard': true,
+                  'createdAt': FieldValue.serverTimestamp(),
+                });
+                Navigator.pop(ctx);
+                showSnack(context, '${nameCtrl.text} added as guard');
+              },
+              child: const Text('Add Guard'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ──────────────────────────────────────────────
+// Manage Managers Page
+// ──────────────────────────────────────────────
+
+class _ManageManagersPage extends StatefulWidget {
+  const _ManageManagersPage();
+
+  @override
+  State<_ManageManagersPage> createState() => _ManageManagersPageState();
+}
+
+class _ManageManagersPageState extends State<_ManageManagersPage> {
+  @override
+  Widget build(BuildContext context) {
+    final society = PrefsService.societyName;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Manage Managers')),
+      floatingActionButton: FloatingActionButton(
+        backgroundColor: const Color(0xFF7C3AED),
+        onPressed: () => _showAddManagerSheet(context, society),
+        child: const Icon(Icons.add, color: Colors.white),
+      ),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: FirebaseFirestore.instance
+            .collection('societies').doc(society)
+            .collection('users')
+            .where('role', isEqualTo: 'manager')
+            .snapshots(),
+        builder: (context, snapshot) {
+          if (!snapshot.hasData) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final docs = snapshot.data!.docs;
+          if (docs.isEmpty) {
+            return const Center(
+              child: Text('No managers added yet.\nTap + to add one.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.textSecondary)),
+            );
+          }
+          return ListView.builder(
+            itemCount: docs.length,
+            itemBuilder: (_, i) {
+              final d = docs[i].data() as Map<String, dynamic>;
+              return ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: const Color(0xFF7C3AED).withValues(alpha: 0.15),
+                  child: const Icon(Icons.manage_accounts, color: Color(0xFF7C3AED)),
+                ),
+                title: Text(d['name'] ?? '', style: const TextStyle(fontWeight: FontWeight.w500)),
+                subtitle: Text(d['phone'] ?? ''),
+                trailing: IconButton(
+                  icon: const Icon(Icons.delete_outline, color: AppColors.statusError),
+                  onPressed: () {
+                    docs[i].reference.delete();
+                    showSnack(context, '${d['name']} removed');
+                  },
+                ),
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+
+  void _showAddManagerSheet(BuildContext context, String society) {
+    final nameCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('Add Manager', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 16),
+            TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'Name', prefixIcon: Icon(Icons.person_outline))),
+            const SizedBox(height: 12),
+            TextField(controller: phoneCtrl, decoration: const InputDecoration(labelText: 'Phone', prefixIcon: Icon(Icons.phone_outlined)), keyboardType: TextInputType.phone),
+            const SizedBox(height: 20),
+            FilledButton(
+              onPressed: () {
+                if (nameCtrl.text.isEmpty || phoneCtrl.text.isEmpty) return;
+                FirebaseFirestore.instance
+                    .collection('societies').doc(society)
+                    .collection('users')
+                    .add({
+                  'name': nameCtrl.text.trim(),
+                  'phone': phoneCtrl.text.trim(),
+                  'role': 'manager',
+                  'isManager': true,
+                  'createdAt': FieldValue.serverTimestamp(),
+                });
+                Navigator.pop(ctx);
+                showSnack(context, '${nameCtrl.text} added as manager');
+              },
+              child: const Text('Add Manager'),
+            ),
+          ],
+        ),
       ),
     );
   }

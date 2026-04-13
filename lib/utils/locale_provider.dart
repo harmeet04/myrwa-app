@@ -131,6 +131,9 @@ const Map<AppLanguage, Map<String, String>> _strings = {
     'event_reminder': 'Event Reminder',
     'pending_bills': 'pending bills',
     'total': 'Total',
+    'complaints': 'Complaints',
+    'notice_board': 'Notice Board',
+    'reminders': 'Reminders',
   },
   AppLanguage.hindi: {
     'nav_home': 'होम',
@@ -216,6 +219,9 @@ const Map<AppLanguage, Map<String, String>> _strings = {
     'event_reminder': 'कार्यक्रम अनुस्मारक',
     'pending_bills': 'बकाया बिल',
     'total': 'कुल',
+    'complaints': 'शिकायतें',
+    'notice_board': 'सूचना पट्ट',
+    'reminders': 'अनुस्मारक',
   },
   AppLanguage.marathi: {
     'nav_home': 'मुख्यपृष्ठ',
@@ -250,6 +256,10 @@ const Map<AppLanguage, Map<String, String>> _strings = {
     'logout': 'लॉगआउट',
     'pending_bills': 'बाकी बिले',
     'total': 'एकूण',
+    'complaints': 'तक्रारी',
+    'notice_board': 'सूचना फलक',
+    'reminders': 'स्मरणपत्रे',
+    'visitor_management': 'पाहुणे व्यवस्थापन',
   },
   AppLanguage.tamil: {
     'nav_home': 'முகப்பு',
@@ -280,6 +290,10 @@ const Map<AppLanguage, Map<String, String>> _strings = {
     'women_helpline': 'பெண்கள்',
     'pending_bills': 'நிலுவை பில்கள்',
     'total': 'மொத்தம்',
+    'complaints': 'புகார்கள்',
+    'notice_board': 'அறிவிப்பு பலகை',
+    'reminders': 'நினைவூட்டல்கள்',
+    'visitor_management': 'பார்வையாளர் மேலாண்மை',
   },
   AppLanguage.telugu: {
     'nav_home': 'హోమ్',
@@ -310,6 +324,10 @@ const Map<AppLanguage, Map<String, String>> _strings = {
     'women_helpline': 'మహిళలు',
     'pending_bills': 'పెండింగ్ బిల్లులు',
     'total': 'మొత్తం',
+    'complaints': 'ఫిర్యాదులు',
+    'notice_board': 'నోటీసు బోర్డు',
+    'reminders': 'రిమైండర్లు',
+    'visitor_management': 'సందర్శకుల నిర్వహణ',
   },
   AppLanguage.kannada: {
     'nav_home': 'ಮುಖಪುಟ',
@@ -340,5 +358,9 @@ const Map<AppLanguage, Map<String, String>> _strings = {
     'women_helpline': 'ಮಹಿಳೆಯರು',
     'pending_bills': 'ಬಾಕಿ ಬಿಲ್‌ಗಳು',
     'total': 'ಒಟ್ಟು',
+    'complaints': 'ದೂರುಗಳು',
+    'notice_board': 'ಸೂಚನಾ ಫಲಕ',
+    'reminders': 'ಜ್ಞಾಪನೆಗಳು',
+    'visitor_management': 'ಭೇಟಿಕಾರರ ನಿರ್ವಹಣೆ',
   },
 };
