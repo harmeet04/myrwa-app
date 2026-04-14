@@ -6,6 +6,7 @@ import '../../utils/app_colors.dart';
 import '../auth/auth_screen.dart';
 import '../home/main_shell.dart';
 import '../onboarding/onboarding_screen.dart';
+import '../guard/guard_dashboard.dart';
 
 class SplashScreen extends StatefulWidget {
   final VoidCallback onThemeToggle;
@@ -42,7 +43,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       try {
         await NotificationService.init().timeout(const Duration(seconds: 3));
       } catch (_) {}
-      if (!PrefsService.hasOnboarded) {
+      if (PrefsService.isGuard) {
+        dest = GuardDashboard(onThemeToggle: widget.onThemeToggle);
+      } else if (!PrefsService.hasOnboarded) {
         dest = OnboardingScreen(onThemeToggle: widget.onThemeToggle);
       } else {
         dest = MainShell(onThemeToggle: widget.onThemeToggle);

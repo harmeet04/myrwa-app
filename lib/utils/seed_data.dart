@@ -27,6 +27,7 @@ class SeedData {
           await userSnap.docs.first.reference.update({
             'isAdmin': data['isAdmin'] ?? false,
             'isGated': data['isGated'] ?? true,
+            'isGuard': data['isGuard'] ?? false,
             'name': data['name'] ?? '',
             'flat': data['flat'] ?? '',
             'society': data['society'] ?? '',
@@ -71,6 +72,18 @@ class SeedData {
       communityType: 'society',
       isAdmin: false,
       isGated: true,
+    );
+
+    // User 4: Guard test
+    await FirestoreService.seedPreRegisteredUser(
+      phone: '9112233445',
+      name: 'Guard_test',
+      flat: 'Gate 1',
+      society: 'gated society',
+      communityType: 'society',
+      isAdmin: false,
+      isGated: true,
+      isGuard: true,
     );
   }
 }
