@@ -12,7 +12,20 @@
           "package_name": "com.myrwa.india"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1059068225676-tlq2drjblem9f0f2gsme5v4k6qu54ip4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.myrwa.india",
+            "certificate_hash": "67503a093609097ea28f52dd4e13dbc899223a43"
+          }
+        },
+        {
+          "client_id": "1059068225676-0tvumpi26tve1l4s3q28b14ienjbtdeg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAGAcQbXwYJoZkUrFbAjVSp8H3uzgn6KkA"
@@ -20,7 +33,19 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1059068225676-0tvumpi26tve1l4s3q28b14ienjbtdeg.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1059068225676-0va2ksv8ug17t3dltk0citc495eq0gqd.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.myrwa.india"
+              }
+            }
+          ]
         }
       }
     }
